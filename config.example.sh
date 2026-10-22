@@ -1,8 +1,11 @@
-# agent-kit 本机配置示例
-# 复制到 ~/.config/agent-kit/config.sh 后按这台电脑修改，不要提交到仓库。
+# agent-kit 本机配置格式说明
+#
+# 不需要手动复制这个文件：运行 scripts/install.sh 时会在命令行里询问，
+# 并生成 ~/.config/agent-kit/config.sh；以后想修改，运行 scripts/configure.sh。
+# 本机配置只属于那台电脑，不要提交到仓库。
 
-# 存放项目的目录，可以写多个，用空格分隔（check-projects.sh 会检查其中的每个项目）
-PROJECT_DIRS="$HOME/Work/AppsWp"
+# 存放项目的目录，多个目录用冒号分隔，例如 "$HOME/Work/Projects:$HOME/Code"
+PROJECT_DIRS=""
 
 # 要安装到哪些工具：claude、codex，用空格分隔
 AGENT_TOOLS="claude codex"

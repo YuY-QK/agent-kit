@@ -74,18 +74,29 @@ if [ $# -gt 0 ]; then
 fi
 
 if [ -z "$PROJECT_DIRS" ]; then
-  echo "本机配置里没有 PROJECT_DIRS，请在 $CONFIG_FILE 中设置，或直接传入项目目录。" >&2
+  echo "还没有设置项目目录。请运行 scripts/configure.sh 设置，或直接传入项目目录。" >&2
   exit 2
 fi
 
-# PROJECT_DIRS 用空格分隔；单个目录路径里不要含空格
-for root in $PROJECT_DIRS; do
-  [ -d "$root" ] || { echo "目录不存在，跳过：$root" >&2; continue; }
+# PROJECT_DIRS 用冒号分隔，目录路径里可以有空格
+old_ifs="$IFS"; IFS=":"
+set -f
+roots="$(for r in $PROJECT_DIRS; do printf '%s\n' "$r"; done)"
+set +f
+IFS="$old_ifs"
+
+printf '%s\n' "$roots" | while IFS= read -r root; do
+  [ -n "$root" ] || continue
+  [ -d "$root" ] || { echo "目录不存在，跳过：$root（可运行 scripts/configure.sh 修改）" >&2; continue; }
+  found=0
   for d in "$root"/*/; do
+    [ -d "$d" ] || continue
     d="${d%/}"
     # 只检查看起来是项目的目录
     if [ -d "$d/.git" ] || [ -f "$d/AGENTS.md" ] || [ -f "$d/CLAUDE.md" ]; then
       check_project "$d"
+      found=1
     fi
   done
+  [ "$found" -eq 1 ] || echo "$root 下没有找到项目（含 .git、AGENTS.md 或 CLAUDE.md 的子文件夹）"
 done

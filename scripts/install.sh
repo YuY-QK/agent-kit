@@ -5,9 +5,11 @@
 #   scripts/install.sh              安装或更新（默认使用软链接）
 #   scripts/install.sh --copy       复制文件而不是软链接
 #   scripts/install.sh --dry-run    只显示将要做的事，不改动任何文件
-#   scripts/install.sh --uninstall  移除本工具装上的软链接
+#   scripts/install.sh --uninstall  移除本工具装上的内容
+#   scripts/install.sh --configure  先重新回答本机配置的问题，再安装
 #
-# 本机配置（可选）：~/.config/agent-kit/config.sh，示例见 config.example.sh
+# 本机配置：~/.config/agent-kit/config.sh。第一次运行时如果没有配置，
+# 会在命令行里询问（见 scripts/configure.sh）。
 # 兼容 macOS 自带的 bash 3.2。
 
 set -eu
@@ -15,24 +17,38 @@ set -eu
 KIT_DIR="$(cd "$(dirname "$0")/.." && pwd -P)"
 CONFIG_FILE="${AGENT_KIT_CONFIG:-$HOME/.config/agent-kit/config.sh}"
 
+MODE="link"
+DRY_RUN=0
+RECONFIGURE=0
+for arg in ${1+"$@"}; do
+  case "$arg" in
+    --copy) MODE="copy" ;;
+    --dry-run) DRY_RUN=1 ;;
+    --uninstall) MODE="uninstall" ;;
+    --configure) RECONFIGURE=1 ;;
+    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    *) echo "未知参数：$arg" >&2; exit 2 ;;
+  esac
+done
+
+# 没有本机配置（或要求重新配置）时，在命令行里询问；预演和卸载不询问
+if [ "$MODE" != "uninstall" ] && [ "$DRY_RUN" -eq 0 ]; then
+  if [ "$RECONFIGURE" -eq 1 ] || [ ! -f "$CONFIG_FILE" ]; then
+    if [ -t 0 ] || [ "${AGENT_KIT_PROMPT:-0}" = "1" ]; then
+      "$KIT_DIR/scripts/configure.sh"
+      echo
+    else
+      echo "未找到本机配置，且当前不是交互终端，跳过询问；以后可运行 scripts/configure.sh。" >&2
+    fi
+  fi
+fi
+
 AGENT_TOOLS="claude codex"
 STACKS="flutter web"
 if [ -f "$CONFIG_FILE" ]; then
   # shellcheck disable=SC1090
   . "$CONFIG_FILE"
 fi
-
-MODE="link"
-DRY_RUN=0
-for arg in ${1+"$@"}; do
-  case "$arg" in
-    --copy) MODE="copy" ;;
-    --dry-run) DRY_RUN=1 ;;
-    --uninstall) MODE="uninstall" ;;
-    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
-    *) echo "未知参数：$arg" >&2; exit 2 ;;
-  esac
-done
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP_DIR="$HOME/.config/agent-kit/backups/$STAMP"

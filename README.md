@@ -41,13 +41,19 @@
 ## 在新电脑上安装
 
 ```sh
-git clone https://github.com/YuY-QK/agent-kit.git   # 克隆到任意位置都可以
-cd agent-kit
-mkdir -p ~/.config/agent-kit
-cp config.example.sh ~/.config/agent-kit/config.sh  # 按这台电脑的情况修改
-./scripts/install.sh --dry-run                      # 先预演，看看会改哪些文件
+gh repo clone YuY-QK/agent-kit ~/Work/agent-kit   # 克隆到任意位置都可以
+cd ~/Work/agent-kit
+./scripts/install.sh --dry-run                    # 可选：先预演，看看会改哪些文件
 ./scripts/install.sh
 ```
+
+第一次运行 `install.sh` 时，会在命令行里依次询问：
+
+1. 存放项目的目录：每次输入一个，可以把文件夹拖进终端或按 Tab 补全，输完直接回车
+2. 要安装到哪些工具：`claude`、`codex`
+3. 要安装哪些技术栈的技能：`flutter`、`web`
+
+答案保存在这台电脑的 `~/.config/agent-kit/config.sh`。以后想修改，运行 `./scripts/configure.sh`（直接回车保留当前值），或 `./scripts/install.sh --configure` 改完顺便重新安装。
 
 安装后的位置：
 
@@ -87,7 +93,7 @@ Claude App 和网页版里保存的技能存在 Claude 账号中，与这里是�
 
 - 仓库自身的位置由脚本自动识别，克隆到哪里都可以。
 - 用户目录统一写作 `$HOME`。
-- 项目所在目录、要安装的工具和技术栈，写在本机配置 `~/.config/agent-kit/config.sh` 里，不提交到仓库。
+- 项目所在目录、要安装的工具和技术栈，安装时在命令行里输入，保存在本机配置 `~/.config/agent-kit/config.sh`，不提交到仓库。仓库里没有任何默认项目目录，格式说明见 `config.example.sh`。
 - 技能和规则里提到项目时只说“项目根目录”“`docs/`”，不写绝对路径。
 
 脚本兼容 macOS 自带的 bash 3.2。
