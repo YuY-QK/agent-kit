@@ -79,6 +79,7 @@ flowchart TB
 
 Conventions that apply to every project, including:
 
+- **Reply language**: always reply in Simplified Chinese (code, commands, paths and proper nouns stay as they are).
 - **About me**: solo developer; no design training (so the assistant proposes UI options first and lets me choose); Simplified Chinese by default.
 - **Plan first, then build**: a new idea goes through `idea-to-plan` into a complete plan, one stage at a time.
 - **Priority of information and decisions**: explicit request > confirmed requirements > behaviour proven by code and tests > technical notes > the assistant's inferences. Always distinguish “current implementation”, “target requirement”, “proposal” and “unconfirmed assumption”.
