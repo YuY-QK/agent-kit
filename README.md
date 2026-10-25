@@ -19,6 +19,7 @@ One set of rules and skills for AI coding assistants, shared across all your com
 - [Sync your profile between computers](#sync-your-profile-between-computers)
 - [Updating](#updating)
 - [Existing rules and skills: conflicts](#existing-rules-and-skills-conflicts)
+- [Start a project in one step](#start-a-project-in-one-step)
 - [Projects](#projects)
 - [Cloud sessions (Claude Code on the web)](#cloud-sessions-claude-code-on-the-web)
 - [What's included](#whats-included)
@@ -263,6 +264,34 @@ Backups go to `~/.config/agent-kit/backups/<date-time>/`, mirroring the original
 
 The page runs only on `127.0.0.1`, needs a one-time token in its address, and closes after 30 minutes. It doesn't load anything from the internet.
 
+## Start a project in one step
+
+Once an idea has a plan (for example from `idea-to-plan`), the `start-project` skill sets up the project's repository for you, on your computer or in a cloud session:
+
+1. Create an **empty** repository on GitHub (the assistant can't create repositories).
+2. Tell the assistant something like "start the project, repository `git@github.com:you/app.git`".
+3. Confirm the few settings it asks about: project name, language, which settings cloud sessions use, branch.
+
+It then clones the repository, adds the project template and the cloud-session hook, saves the plan documents in `docs/`, fills in `AGENTS.md`, `docs/AI_RULES.md` and `docs/progress.md` from the plan, and commits and pushes. Start a new session on the repository to begin development; the rules are loaded when a session starts.
+
+Settings for cloud sessions (`--profile`):
+
+| Mode | What it does | Use for |
+|---|---|---|
+| `copy` | Copies your profile into `.claude/agent-kit/` | Private projects |
+| `repo` | Writes your profile repository's URL into `.claude/agent-kit/profile-repo`; nothing personal is committed | Public projects, if cloud sessions can reach that repository (otherwise they say so and use the defaults) |
+| `none` | agent-kit's defaults | Anything else |
+
+In a cloud session, the Claude GitHub app needs access to the new repository. If it only has access to selected repositories, add the new one in GitHub first.
+
+The skill runs `scripts/bootstrap-project.sh`, which you can also run yourself:
+
+```bash
+scripts/bootstrap-project.sh git@github.com:you/app.git --dir ~/Code/app --name "App" --lang zh-CN --profile copy
+# fill in the parts marked {{...}}, then:
+scripts/bootstrap-project.sh ~/Code/app --push
+```
+
 ## Projects
 
 The global rules say how to work; each project's `AGENTS.md` says what is specific to that project. Codex reads `AGENTS.md` directly; Claude Code reads `CLAUDE.md`, so the template's `CLAUDE.md` contains only `@AGENTS.md` and both tools read the same rules.
@@ -298,11 +327,11 @@ What it adds to the project:
 |---|---|
 | `.claude/hooks/agent-kit-session-start.sh` | The hook. It runs only when `CLAUDE_CODE_REMOTE=true`, and never fails the session; problems are reported in the session and in `~/.config/agent-kit/cloud-setup.log` |
 | `.claude/settings.json` | A `SessionStart` entry, merged into your existing settings |
-| `.claude/agent-kit/` | With `--with-profile`: a copy of your `profile.sh` and `rules/*.md` |
+| `.claude/agent-kit/` | With `--with-profile`: a copy of your `profile.sh` and `rules/*.md`; with `start-project --profile repo`: only `profile-repo`, your profile repository's URL |
 
 Which settings a cloud session uses, in order:
 
-1. `AGENT_KIT_PROFILE_REPO`, if you set it in the cloud environment's variables and the session can clone it. A private profile repository usually can't be cloned from a cloud session.
+1. Your profile repository, if the session can clone it: `AGENT_KIT_PROFILE_REPO` from the cloud environment's variables, otherwise the URL in the project's `.claude/agent-kit/profile-repo` (written by `start-project` with `--profile repo`). A private profile repository usually can't be cloned from a cloud session; the session then tells you and falls back to the next option.
 2. The project's `.claude/agent-kit/`, from `--with-profile`. It is committed with the project, so if the project is public, so are these settings. Run the command again after changing your settings to refresh the copy.
 3. agent-kit's defaults (replies in English).
 
@@ -315,6 +344,7 @@ Shared skills:
 | Skill | Use it to |
 |---|---|
 | `idea-to-plan` | Turn a new app or product idea into an idea brief, PRD, prototype, technical design and development plan, then wire it into a project |
+| `start-project` | Set up a new project's GitHub repository in one step: template, plan documents, cloud hook, settings, commit and push |
 | `product-change` | Design or review requirements, scope, business rules, flows and acceptance criteria; control requirement changes |
 | `ui-experience` | Design or review screens, flows, component states, visual hierarchy, motion, responsiveness, localisation and accessibility |
 | `architecture-change` | Design or review cross-module architecture, data, networking, integrations, permissions and security boundaries |
@@ -349,7 +379,8 @@ Every skill has an English `SKILL.md` and a Chinese `SKILL.zh-CN.md`; the instal
 | `scripts/install.sh` | Install or update. Options: `--profile SOURCE`, `--configure`, `--dry-run`, `--review` (open the page even without conflicts), `--no-web`, `--yes`, `--copy` (copy instead of symlink), `--uninstall` |
 | `scripts/configure.sh` | Change settings in the terminal; `--web` for the web page; `--missing` to answer only new questions |
 | `scripts/sync-profile.sh` | `status`, `init URL`, `clone URL`, `pull`, `push [message]` |
-| `scripts/new-project.sh` | Add the project template to a project |
+| `scripts/bootstrap-project.sh` | Clone a new project's repository, add the template and cloud hook, and with `--push` commit and push (used by `start-project`) |
+| `scripts/new-project.sh` | Add the project template to a project; `--cloud` also adds the cloud hook |
 | `scripts/check-projects.sh` | Check projects against the project-layer conventions |
 | `scripts/enable-cloud.sh` | Add the start-up hook that installs agent-kit in a project's cloud sessions; `--with-profile` also copies your settings |
 | `scripts/build.sh` | Build into `~/.config/agent-kit/build/`; `--rules` prints the generated global rules |

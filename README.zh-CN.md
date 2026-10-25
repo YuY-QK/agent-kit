@@ -19,6 +19,7 @@
 - [在多台电脑间同步个人设置](#在多台电脑间同步个人设置)
 - [更新](#更新)
 - [已有的规则和技能：冲突处理](#已有的规则和技能冲突处理)
+- [一步开项目](#一步开项目)
 - [项目](#项目)
 - [云端会话（网页版 Claude Code）](#云端会话网页版-claude-code)
 - [包含的技能](#包含的技能)
@@ -263,6 +264,34 @@ mv ~/agent-kit ~/Code/agent-kit
 
 网页只运行在 `127.0.0.1`，地址里需要一次性令牌，30 分钟后自动关闭，不从网络加载任何内容。
 
+## 一步开项目
+
+想法有了计划之后（例如用 `idea-to-plan` 做出来的），`start-project` 技能会帮你搭好项目仓库，在你的电脑上和云端会话里都能用：
+
+1. 在 GitHub 上新建一个**空**仓库（AI 不能创建仓库）。
+2. 对 AI 说类似“开项目，仓库是 `git@github.com:you/app.git`”。
+3. 确认它问的几项设置：项目名、语言、云端会话用哪份设置、分支。
+
+然后它会克隆仓库，添加项目模板和云端会话钩子，把计划文档存进 `docs/`，根据计划填好 `AGENTS.md`、`docs/AI_RULES.md` 和 `docs/progress.md`，再提交并推送。之后在这个仓库上新开一个会话开始开发；规则在会话启动时加载。
+
+云端会话用的设置（`--profile`）：
+
+| 方式 | 作用 | 适用 |
+|---|---|---|
+| `copy` | 把你的个人设置复制到 `.claude/agent-kit/` | 私有项目 |
+| `repo` | 把个人设置仓库的地址写进 `.claude/agent-kit/profile-repo`，不提交任何个人内容 | 公开项目，前提是云端会话能访问那个仓库（不能访问时会话会提示，并改用默认设置） |
+| `none` | 使用 agent-kit 的默认设置 | 其他情况 |
+
+在云端会话里，Claude 的 GitHub App 要有新仓库的权限。如果它只能访问选定的仓库，先在 GitHub 里把新仓库加进去。
+
+这个技能调用的是 `scripts/bootstrap-project.sh`，你也可以自己运行：
+
+```bash
+scripts/bootstrap-project.sh git@github.com:you/app.git --dir ~/Code/app --name "应用" --lang zh-CN --profile copy
+# 填写 {{...}} 标出的部分，然后：
+scripts/bootstrap-project.sh ~/Code/app --push
+```
+
 ## 项目
 
 全局规则说明怎么工作，每个项目的 `AGENTS.md` 说明这个项目特有的东西。Codex 直接读 `AGENTS.md`；Claude Code 读 `CLAUDE.md`，所以模板里的 `CLAUDE.md` 只有一行 `@AGENTS.md`，两个工具读的是同一份规则。
@@ -298,11 +327,11 @@ scripts/new-project.sh ~/Code/new-app "新应用" --cloud --with-profile
 |---|---|
 | `.claude/hooks/agent-kit-session-start.sh` | 钩子本身。只在 `CLAUDE_CODE_REMOTE=true` 时运行，从不让会话失败；出问题会在会话里说明，并记录在 `~/.config/agent-kit/cloud-setup.log` |
 | `.claude/settings.json` | 一条 `SessionStart` 设置，合并进已有设置 |
-| `.claude/agent-kit/` | 加 `--with-profile` 时：`profile.sh` 和 `rules/*.md` 的副本 |
+| `.claude/agent-kit/` | 加 `--with-profile` 时：`profile.sh` 和 `rules/*.md` 的副本；用 `start-project --profile repo` 时：只有 `profile-repo`，即个人设置仓库的地址 |
 
 云端会话使用哪份设置，按顺序：
 
-1. `AGENT_KIT_PROFILE_REPO`：你在云端环境变量里设置了它、并且会话能克隆到时使用。私有的个人设置仓库，通常在云端会话里克隆不了。
+1. 你的个人设置仓库，会话能克隆到时使用：优先用云端环境变量里的 `AGENT_KIT_PROFILE_REPO`，没有就用项目里 `.claude/agent-kit/profile-repo` 中的地址（`start-project` 用 `--profile repo` 时写入）。私有的个人设置仓库通常在云端会话里克隆不了，这时会话会提示你，并改用下一项。
 2. 项目里的 `.claude/agent-kit/`，来自 `--with-profile`。它随项目一起提交，项目公开的话，这份设置也会公开。改了设置后再运行一次命令，就会更新这份副本。
 3. agent-kit 的默认设置（用英文回复）。
 
@@ -315,6 +344,7 @@ scripts/new-project.sh ~/Code/new-app "新应用" --cloud --with-profile
 | 技能 | 用途 |
 |---|---|
 | `idea-to-plan` | 把新的应用或产品想法逐步完善成想法简报、PRD、原型、技术设计和开发计划，再接入项目 |
+| `start-project` | 一步搭好新项目的 GitHub 仓库：模板、计划文档、云端钩子、个人设置，提交并推送 |
 | `product-change` | 设计或审查需求、范围、业务规则、流程和验收标准，控制需求变更 |
 | `ui-experience` | 设计或审查界面、流程、组件状态、视觉层级、动效、适配、本地化和无障碍 |
 | `architecture-change` | 设计或审查跨模块架构、数据、网络、集成、权限和安全边界 |
@@ -349,7 +379,8 @@ scripts/new-project.sh ~/Code/new-app "新应用" --cloud --with-profile
 | `scripts/install.sh` | 安装或更新。选项：`--profile 来源`、`--configure`、`--dry-run`、`--review`（没有冲突也打开网页）、`--no-web`、`--yes`、`--copy`（复制而不是链接）、`--uninstall` |
 | `scripts/configure.sh` | 在终端修改设置；`--web` 用网页；`--missing` 只回答新增的问题 |
 | `scripts/sync-profile.sh` | `status`、`init 地址`、`clone 地址`、`pull`、`push [说明]` |
-| `scripts/new-project.sh` | 给项目添加项目模板 |
+| `scripts/bootstrap-project.sh` | 克隆新项目的仓库，添加模板和云端钩子，加 `--push` 时提交并推送（`start-project` 用的就是它） |
+| `scripts/new-project.sh` | 给项目添加项目模板；`--cloud` 同时添加云端钩子 |
 | `scripts/check-projects.sh` | 按项目层约定检查项目 |
 | `scripts/enable-cloud.sh` | 给项目添加启动钩子，让云端会话自动安装 agent-kit；`--with-profile` 同时复制你的设置 |
 | `scripts/build.sh` | 生成到 `~/.config/agent-kit/build/`；`--rules` 输出生成的全局规则 |

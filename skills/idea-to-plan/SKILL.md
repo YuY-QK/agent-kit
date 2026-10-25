@@ -129,6 +129,8 @@ M1 should get the core loop running as early as possible, even with a rough UI, 
 
 ## Step 6: wire it into the project and prepare to implement
 
+If the project has no repository yet, or the user wants it set up in one go (template, plan documents, cloud sessions, commit and push), use the `start-project` skill for this step instead; it covers items 1–3 below.
+
 1. Put an `AGENTS.md` at the project root, generated with agent-kit's `scripts/new-project.sh` (the template holds only the collaboration framework, no business rules); if agent-kit isn't installed, ask the user first. Fill in only the file paths in “Document routing”, the skill names and the project commands.
 2. Add a `CLAUDE.md` containing the single line `@AGENTS.md`, so Claude Code and Codex read the same rules.
 3. Fill in `docs/progress.md` (also from the template): the milestones from the development plan as the plan, “nothing built yet” as the status. It is the only progress summary; update it after each milestone.

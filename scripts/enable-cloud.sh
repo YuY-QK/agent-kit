@@ -116,5 +116,7 @@ if [ "$WITH_PROFILE" -eq 1 ]; then
   say cloud_profile_public
 fi
 
-echo
-say cloud_next "$remote"
+if [ -z "${AGENT_KIT_BOOTSTRAP:-}" ]; then
+  echo
+  say cloud_next "$remote"
+fi
