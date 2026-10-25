@@ -1,37 +1,58 @@
 #!/usr/bin/env bash
-# 在命令行里逐项询问，生成本机配置 ~/.config/agent-kit/config.sh。
-# 每台电脑各自运行一次；之后想改，再运行一次即可（直接回车保留当前值）。
+# Answer a few questions to create or change your agent-kit settings.
 #
-# 用法：
-#   scripts/configure.sh
+# Usage:
+#   scripts/configure.sh            ask every question in the terminal (Enter keeps the current value)
+#   scripts/configure.sh --web      use the web form instead (needs python3)
+#   scripts/configure.sh --missing  ask only questions that have no answer yet
 #
-# 兼容 macOS 自带的 bash 3.2。
+# Writes two files:
+#   <profile>/profile.sh                 your preferences; safe to sync between computers
+#   ~/.config/agent-kit/machine.sh       this computer only (project folders, profile location)
+#
+# Compatible with bash 3.2.
 
 set -eu
 
-CONFIG_FILE="${AGENT_KIT_CONFIG:-$HOME/.config/agent-kit/config.sh}"
-ALL_TOOLS="claude codex"
-ALL_STACKS="flutter web"
+KIT_DIR="$(cd "$(dirname "$0")/.." && pwd -P)"
+# shellcheck disable=SC1091
+. "$KIT_DIR/scripts/lib/common.sh"
 
-# 读取当前配置（如果有），作为重新配置时“直接回车保留”的值
-PROJECT_DIRS=""
-AGENT_TOOLS=""
-STACKS=""
-if [ -f "$CONFIG_FILE" ]; then
-  # shellcheck disable=SC1090
-  . "$CONFIG_FILE"
+USE_WEB=0
+ONLY_MISSING=0
+for arg in ${1+"$@"}; do
+  case "$arg" in
+    --web) USE_WEB=1 ;;
+    --missing) ONLY_MISSING=1 ;;
+    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
+    *) echo "unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
+
+load_settings
+load_messages "$UI_LANG"
+CUSTOM_PROFILE_DIR=""
+[ -n "${M_HAS_PROFILE_DIR:-}" ] && CUSTOM_PROFILE_DIR="$(to_config_path "$PROFILE_DIR")"
+
+if [ "$ONLY_MISSING" -eq 1 ] && [ -z "$(echo $MISSING_KEYS)" ]; then
+  exit 0
 fi
-OLD_PROJECT_DIRS="$PROJECT_DIRS"   # 读入时 $HOME 已展开成绝对路径
-OLD_TOOLS="$AGENT_TOOLS"
-OLD_STACKS="$STACKS"
 
-# 从终端读一行；终端里启用行编辑，可以用 Tab 补全路径
+if [ "$USE_WEB" -eq 1 ]; then
+  if web_available; then
+    exec python3 "$KIT_DIR/scripts/lib/config_ui.py" --kit "$KIT_DIR" --home "$HOME" \
+      --machine "$MACHINE_FILE" --profile-dir "$PROFILE_DIR"
+  fi
+  say no_python_terminal
+fi
+
+# ---------- prompts ----------
+
 ask() {
-  prompt="$1"
   if [ -t 0 ]; then
-    read -r -e -p "$prompt" REPLY || REPLY=""
+    read -r -e -p "$1" REPLY || REPLY=""
   else
-    printf '%s' "$prompt"
+    printf '%s' "$1"
     read -r REPLY || REPLY=""
     echo
   fi
@@ -41,7 +62,108 @@ trim() {
   printf '%s' "$1" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
 }
 
-# 把用户输入的路径整理成绝对路径：去引号、处理拖入终端产生的反斜杠转义、展开 ~、去掉末尾 /
+needs() {
+  # needs KEY: should this question be asked?
+  [ "$ONLY_MISSING" -eq 0 ] && return 0
+  case " $MISSING_KEYS " in *" $1 "*) return 0 ;; esac
+  return 1
+}
+
+skill_description() {
+  for d in "$KIT_DIR"/skills/"$1" "$KIT_DIR"/stacks/*/skills/"$1"; do
+    [ -d "$d" ] || continue
+    f="$d/SKILL.md"
+    [ -f "$d/SKILL.$UI_LANG.md" ] && f="$d/SKILL.$UI_LANG.md"
+    desc="$(sed -n 's/^description: *//p' "$f" | head -1)"
+    # first sentence only, at most 70 characters
+    desc="${desc%%。*}"; desc="${desc%%. *}"
+    [ "${#desc}" -gt 70 ] && desc="${desc:0:70}…"
+    printf '%s' "$desc"
+    return 0
+  done
+}
+
+label_of() {
+  # label_of KEY VALUE
+  if [ "$1" = "SKILL" ]; then
+    printf '%-22s %s' "$2" "$(skill_description "$2")"
+    return
+  fi
+  v="$(printf '%s' "$2" | tr '-' '_')"
+  eval "l=\${M_opt_$1_$v:-}"
+  if [ -z "$l" ]; then
+    eval "l=\${M_lang_$v:-}"
+  fi
+  printf '%s' "${l:-$2}"
+}
+
+# ask_choice VAR KEY "values" — single choice; "*" in values allows free text
+ask_choice() {
+  var="$1"; key="$2"; values="$3"
+  eval "current=\$$var"
+  i=0
+  for v in $values; do
+    i=$((i + 1))
+    if [ "$v" = "*" ]; then
+      printf '   %2d) %s\n' "$i" "$(t other_free_text)"
+    else
+      mark=""
+      [ "$v" = "$current" ] && mark="  $(t current_mark)"
+      printf '   %2d) %s%s\n' "$i" "$(label_of "$key" "$v")" "$mark"
+    fi
+  done
+  # show free-text current value if it's not one of the presets
+  case " $values " in *" $current "*) ;; *) [ -n "$current" ] && printf '       %s %s\n' "$(t current_value)" "$current" ;; esac
+  while :; do
+    ask "   $(t choose_number) "
+    a="$(trim "$REPLY")"
+    [ -z "$a" ] && return 0
+    case "$a" in *[!0-9]*) say invalid_number; continue ;; esac
+    j=0; picked=""
+    for v in $values; do j=$((j + 1)); [ "$j" -eq "$a" ] && picked="$v"; done
+    if [ -z "$picked" ]; then say invalid_number; continue; fi
+    if [ "$picked" = "*" ]; then
+      ask "   $(t type_value) "
+      free="$(trim "$REPLY")"
+      [ -z "$free" ] && continue
+      if ! safe_value "$free"; then say invalid_chars; continue; fi
+      eval "$var=\$free"
+    else
+      eval "$var=\$picked"
+    fi
+    return 0
+  done
+}
+
+# ask_multi VAR KEY "values" — multiple choice by numbers separated by spaces
+ask_multi() {
+  var="$1"; key="$2"; values="$3"
+  eval "current=\$$var"
+  i=0
+  for v in $values; do
+    i=$((i + 1))
+    mark=""
+    case " $current " in *" $v "*) mark="  $(t current_mark)" ;; esac
+    printf '   %2d) %s%s\n' "$i" "$(label_of "$key" "$v")" "$mark"
+  done
+  while :; do
+    ask "   $(t choose_numbers) "
+    a="$(trim "$REPLY")"
+    [ -z "$a" ] && return 0
+    out=""; bad=0
+    for n in $a; do
+      case "$n" in *[!0-9]*) bad=1; break ;; esac
+      j=0; picked=""
+      for v in $values; do j=$((j + 1)); [ "$j" -eq "$n" ] && picked="$v"; done
+      if [ -z "$picked" ]; then bad=1; break; fi
+      case " $out " in *" $picked "*) ;; *) out="${out:+$out }$picked" ;; esac
+    done
+    if [ "$bad" -eq 1 ] || [ -z "$out" ]; then say invalid_number; continue; fi
+    eval "$var=\$out"
+    return 0
+  done
+}
+
 normalize_path() {
   p="$(trim "$1")"
   case "$p" in
@@ -57,144 +179,150 @@ normalize_path() {
   printf '%s' "$p"
 }
 
-# 显示用：把 $HOME 开头的路径写成 ~
-pretty() {
-  case "$1" in
-    "$HOME") printf '~' ;;
-    "$HOME"/*) printf '~/%s' "${1#"$HOME"/}" ;;
-    *) printf '%s' "$1" ;;
-  esac
-}
-
-# 写入配置用：把 $HOME 开头的路径写成 $HOME/...，换电脑用户名也能用
-to_config() {
-  case "$1" in
-    "$HOME") printf '$HOME' ;;
-    "$HOME"/*) printf '$HOME/%s' "${1#"$HOME"/}" ;;
-    *) printf '%s' "$1" ;;
-  esac
-}
-
-# 校验一组以空格分隔的选项都在允许范围内
-valid_choices() {
-  for item in $1; do
-    ok=0
-    for allowed in $2; do
-      [ "$item" = "$allowed" ] && ok=1
-    done
-    [ "$ok" -eq 1 ] || return 1
-  done
-  return 0
-}
-
-echo "== agent-kit 本机配置"
-echo "配置文件：$(pretty "$CONFIG_FILE")"
-echo
-
-# ---- 项目目录 ----
-echo "1. 存放项目的目录"
-echo "   检查脚本会把这些目录下的每个子文件夹当作一个项目。"
-echo "   每次输入一个目录（可以把文件夹拖进终端，或按 Tab 补全），全部输完后直接回车。"
-if [ -n "$OLD_PROJECT_DIRS" ]; then
-  shown=""
-  old_ifs="$IFS"; IFS=":"
-  for d in $OLD_PROJECT_DIRS; do shown="$shown  $(pretty "$d")"; done
-  IFS="$old_ifs"
-  echo "   当前：$shown"
-  echo "   第一项直接回车，表示保留当前设置。"
-fi
-
-dirs=""
-count=0
-while :; do
-  ask "   目录 $((count + 1))："
-  raw="$(trim "$REPLY")"
-  if [ -z "$raw" ]; then
-    if [ "$count" -eq 0 ] && [ -n "$OLD_PROJECT_DIRS" ]; then
-      old_ifs="$IFS"; IFS=":"
-      for d in $OLD_PROJECT_DIRS; do
-        entry="$(to_config "$d")"
-        if [ -z "$dirs" ]; then dirs="$entry"; else dirs="$dirs:$entry"; fi
-      done
-      IFS="$old_ifs"
-      echo "   保留当前设置。"
+ask_project_dirs() {
+  if [ -n "$PROJECT_DIRS" ]; then
+    shown=""
+    old_ifs="$IFS"; IFS=":"
+    for d in $PROJECT_DIRS; do shown="$shown  $(pretty "$d")"; done
+    IFS="$old_ifs"
+    printf '   %s%s\n' "$(t current_value)" "$shown"
+    say keep_with_enter
+  fi
+  dirs=""; count=0
+  while :; do
+    ask "   $(t folder_n "$((count + 1))") "
+    raw="$(trim "$REPLY")"
+    if [ -z "$raw" ]; then
+      if [ "$count" -eq 0 ] && [ -n "$PROJECT_DIRS" ]; then
+        dirs=""
+        old_ifs="$IFS"; IFS=":"
+        for d in $PROJECT_DIRS; do e="$(to_config_path "$d")"; dirs="${dirs:+$dirs:}$e"; done
+        IFS="$old_ifs"
+        say kept
+        break
+      fi
+      if [ "$count" -eq 0 ]; then
+        ask "   $(t no_folder_skip) "
+        case "$(trim "$REPLY")" in y|Y|yes|YES) say skipped_folders; break ;; *) continue ;; esac
+      fi
       break
     fi
-    if [ "$count" -eq 0 ]; then
-      ask "   还没有输入任何目录。暂时不设置吗？[y/N] "
-      case "$(trim "$REPLY")" in
-        y|Y|yes|YES) echo "   暂不设置，以后可以重新运行 scripts/configure.sh。"; break ;;
-        *) continue ;;
-      esac
-    fi
-    break
-  fi
-
-  path="$(normalize_path "$raw")"
-  case "$path" in
-    *\"*|*\`*|*\$*|*:*)
-      echo "   路径里不能包含 \" \` \$ 或 :，请换一个。"
-      continue ;;
-    /*) ;;
-    *)
-      echo "   请输入完整路径，例如 ~/Work/Projects。"
-      continue ;;
-  esac
-  if [ ! -d "$path" ]; then
-    ask "   $(pretty "$path") 不存在，仍然使用吗？[y/N] "
-    case "$(trim "$REPLY")" in
-      y|Y|yes|YES) ;;
-      *) continue ;;
+    path="$(normalize_path "$raw")"
+    case "$path" in
+      *\"*|*\`*|*\$*|*:*) say invalid_path_chars; continue ;;
+      /*) ;;
+      *) say need_full_path; continue ;;
     esac
-  fi
-  entry="$(to_config "$path")"
-  case ":$dirs:" in
-    *":$entry:"*) echo "   已经添加过了。"; continue ;;
+    if [ ! -d "$path" ]; then
+      ask "   $(t folder_missing_use "$(pretty "$path")") "
+      case "$(trim "$REPLY")" in y|Y|yes|YES) ;; *) continue ;; esac
+    fi
+    e="$(to_config_path "$path")"
+    case ":$dirs:" in *":$e:"*) say already_added; continue ;; esac
+    dirs="${dirs:+$dirs:}$e"
+    count=$((count + 1))
+    say added "$(pretty "$path")"
+  done
+  PROJECT_DIRS="$dirs"
+}
+
+# ---------- questions ----------
+
+header() { printf '\n%s\n' "$1"; [ -n "${2:-}" ] && printf '   %s\n' "$2"; return 0; }
+
+say_title() { printf '%s\n' "== $(t configure_title)"; }
+
+say_title
+say config_files "$(pretty "$PROFILE_FILE")" "$(pretty "$MACHINE_FILE")"
+[ -n "$LEGACY_LOADED" ] && say legacy_found "$(pretty "$LEGACY_CONFIG")"
+printf '   %s\n' "$(t enter_keeps)"
+
+if needs UI_LANG; then
+  header "1. Language of this installer / 安装程序的语言"
+  ask_choice UI_LANG UI_LANG "$OPT_UI_LANG_CHOICES"
+  load_messages "$UI_LANG"
+fi
+if needs CONTENT_LANG; then
+  header "2. $(t q_content_lang)" "$(t q_content_lang_hint)"
+  ask_choice CONTENT_LANG CONTENT_LANG "$OPT_CONTENT_LANG_CHOICES"
+fi
+if needs REPLY_LANG; then
+  header "3. $(t q_reply_lang)" "$(t q_reply_lang_hint)"
+  ask_choice REPLY_LANG REPLY_LANG "$OPT_REPLY_LANG_CHOICES"
+fi
+if needs DOCS_LANG; then
+  header "4. $(t q_docs_lang)" "$(t q_docs_lang_hint)"
+  ask_choice DOCS_LANG DOCS_LANG "$OPT_DOCS_LANG_CHOICES"
+fi
+if needs WORK_MODE; then
+  header "5. $(t q_work_mode)"
+  ask_choice WORK_MODE WORK_MODE "$OPT_WORK_MODE_CHOICES"
+fi
+if needs DESIGN; then
+  header "6. $(t q_design)"
+  ask_choice DESIGN DESIGN "$OPT_DESIGN_CHOICES"
+fi
+if needs PLANNING; then
+  header "7. $(t q_planning)"
+  ask_choice PLANNING PLANNING "$OPT_PLANNING_CHOICES"
+fi
+if needs COMMITS; then
+  header "8. $(t q_commits)"
+  ask_choice COMMITS COMMITS "$OPT_COMMITS_CHOICES"
+fi
+if needs SCAFFOLD; then
+  header "9. $(t q_scaffold)" "$(t q_scaffold_hint)"
+  [ -n "$SCAFFOLD" ] && printf '   %s %s\n' "$(t current_value)" "$SCAFFOLD"
+  while :; do
+    ask "   > "
+    a="$(trim "$REPLY")"
+    [ -z "$a" ] && break
+    if [ "$a" = "-" ]; then SCAFFOLD=""; break; fi
+    if ! safe_value "$a"; then say invalid_chars; continue; fi
+    SCAFFOLD="$a"; break
+  done
+fi
+if needs STACKS; then
+  header "10. $(t q_stacks)"
+  ask_multi STACKS STACKS "$(repo_stacks | tr '\n' ' ')"
+fi
+if needs SKILLS; then
+  header "11. $(t q_skills)" "$(t q_skills_hint)"
+  printf '    1) %s\n    2) %s\n' "$(t skills_all)" "$(t skills_pick)"
+  ask "   $(t choose_number) "
+  case "$(trim "$REPLY")" in
+    1) SKILLS="all" ;;
+    2)
+      [ "$SKILLS" = "all" ] && SKILLS="$(repo_skill_names | tr '\n' ' ' | sed 's/ $//')"
+      ask_multi SKILLS SKILL "$(repo_skill_names | tr '\n' ' ')"
+      ;;
   esac
-  if [ -z "$dirs" ]; then dirs="$entry"; else dirs="$dirs:$entry"; fi
-  count=$((count + 1))
-  echo "   已添加：$(pretty "$path")"
-done
+fi
+if needs TOOLS; then
+  header "12. $(t q_tools)"
+  ask_multi TOOLS TOOLS "$OPT_TOOLS_CHOICES"
+fi
+if needs PROJECT_DIRS; then
+  header "13. $(t q_project_dirs)" "$(t q_project_dirs_hint)"
+  ask_project_dirs
+else
+  # keep the machine value in config form
+  dirs=""
+  old_ifs="$IFS"; IFS=":"
+  for d in $PROJECT_DIRS; do e="$(to_config_path "$d")"; dirs="${dirs:+$dirs:}$e"; done
+  IFS="$old_ifs"
+  PROJECT_DIRS="$dirs"
+fi
+
+write_profile
+write_machine
+if [ -n "$LEGACY_LOADED" ] && [ -f "$LEGACY_CONFIG" ]; then
+  mkdir -p "$BACKUP_ROOT"
+  mv "$LEGACY_CONFIG" "$BACKUP_ROOT/config.sh.migrated-$(date +%Y%m%d-%H%M%S)"
+fi
+
 echo
-
-# ---- 工具 ----
-echo "2. 要安装到哪些工具（可选：$ALL_TOOLS，用空格分隔）"
-current_tools="${OLD_TOOLS:-$ALL_TOOLS}"
-while :; do
-  ask "   直接回车使用 [$current_tools]："
-  tools="$(trim "$REPLY")"
-  [ -n "$tools" ] || tools="$current_tools"
-  if valid_choices "$tools" "$ALL_TOOLS"; then break; fi
-  echo "   只能填写：$ALL_TOOLS"
-done
-echo
-
-# ---- 技术栈 ----
-echo "3. 要安装哪些技术栈的技能（可选：$ALL_STACKS，用空格分隔）"
-current_stacks="${OLD_STACKS:-$ALL_STACKS}"
-while :; do
-  ask "   直接回车使用 [$current_stacks]："
-  stacks="$(trim "$REPLY")"
-  [ -n "$stacks" ] || stacks="$current_stacks"
-  if valid_choices "$stacks" "$ALL_STACKS"; then break; fi
-  echo "   只能填写：$ALL_STACKS"
-done
-echo
-
-mkdir -p "$(dirname "$CONFIG_FILE")"
-{
-  echo "# agent-kit 本机配置，由 scripts/configure.sh 生成。"
-  echo "# 只属于这台电脑，不要提交到仓库。想修改可以重新运行 scripts/configure.sh。"
-  echo
-  echo "# 存放项目的目录，多个目录用冒号分隔"
-  printf 'PROJECT_DIRS="%s"\n' "$dirs"
-  echo
-  echo "# 要安装到哪些工具：$ALL_TOOLS"
-  printf 'AGENT_TOOLS="%s"\n' "$tools"
-  echo
-  echo "# 要安装哪些技术栈的技能：$ALL_STACKS"
-  printf 'STACKS="%s"\n' "$stacks"
-} > "$CONFIG_FILE"
-
-echo "已保存到 $(pretty "$CONFIG_FILE")："
-grep -E '^[A-Z_]+=' "$CONFIG_FILE" | sed 's/^/   /'
+say saved_to "$(pretty "$PROFILE_FILE")"
+grep -E '^[A-Z_]+=' "$PROFILE_FILE" | grep -v '^PROFILE_VERSION=' | sed 's/^/   /'
+say saved_to "$(pretty "$MACHINE_FILE")"
+grep -E '^[A-Z_]+=' "$MACHINE_FILE" | grep -v '^MACHINE_VERSION=' | sed 's/^/   /'

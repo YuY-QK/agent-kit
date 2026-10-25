@@ -1,0 +1,1 @@
+- I work in a team: follow the project's review, branching and ownership conventions, and flag changes that affect other people's areas.

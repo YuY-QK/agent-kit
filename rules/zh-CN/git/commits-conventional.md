@@ -1,0 +1,1 @@
+- 提交保持单一目的，使用 `feat:`、`fix:`、`test:`、`docs:`、`refactor:`、`chore:` 前缀。

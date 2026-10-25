@@ -1,52 +1,52 @@
 ---
 name: quality-testing
-description: 设计、编写或审查测试、回归范围和质量证据，覆盖单元、组件、集成、边界和失败场景。用于验证设计和补测试；只实现功能、不涉及验证设计时不用。
+description: Design, write or review tests, regression scope and quality evidence — unit, component, integration, edge and failure cases. Use it for verification design and adding tests; don't use it when only implementing a feature with no verification design involved.
 ---
 
-# 质量与测试
+# Quality and testing
 
-用风险驱动的测试证明产品行为、数据安全和失败恢复，而不是追求测试数量或覆盖实现细节。
+Use risk-driven tests to prove product behaviour, data safety and failure recovery, rather than chasing test counts or covering implementation details.
 
-## 建立依据
+## Establish the basis
 
-- 读取本次验证所需的项目规则和 PRD 验收标准；纯局部测试不加载无关的产品资料。
-- 用代码确认当前实现，用需求确认目标语义；现有测试不是高于产品契约的事实来源。
-- 对照改动找出用户路径、数据边界、平台边界和最可能造成损失的失败点。
-- 需求不可观察或互相矛盾时，先指出问题，不让测试替产品做决定。
+- Read the project rules and PRD acceptance criteria this verification needs; don't load unrelated product material for purely local tests.
+- Confirm the current implementation from code and the target semantics from requirements; existing tests are not a source of truth above the product contract.
+- From the change, identify user paths, data boundaries, platform boundaries and the failure points most likely to cause damage.
+- When a requirement is unobservable or contradictory, raise it first; don't let tests make product decisions.
 
-## 风险矩阵
+## Risk matrix
 
-按任务覆盖相关的方面：
+Cover what applies:
 
-- 主流程、替代流程和退出条件。
-- 最小值、最大值、空值、无效值和跨边界值。
-- 加载、空、失败、重试、离线、权限拒绝和取消。
-- 重复点击、并发、幂等、过期的异步结果和生命周期切换。
-- 数据损坏、旧版本、部分写入、空间不足和恢复。
-- 任务特有的输入规模、状态空间和时间/顺序边界。
-- 平台或插件差异，以及发布渠道的门禁。
+- Main flow, alternative flows and exit conditions.
+- Minimum, maximum, empty, invalid and boundary-crossing values.
+- Loading, empty, failure, retry, offline, permission denied and cancellation.
+- Repeated taps, concurrency, idempotency, stale async results and lifecycle transitions.
+- Data corruption, old versions, partial writes, full disks and recovery.
+- Task-specific input sizes, state spaces and timing/ordering boundaries.
+- Platform or plugin differences, and release-channel gates.
 
-风险越高，越要验证失败不会破坏已有数据，而不只是成功路径返回正确结果。
+The higher the risk, the more important it is to prove that failures don't damage existing data — not just that the happy path returns the right result.
 
-## 选择测试层级
+## Choose the test level
 
-- 单元测试：纯模型、算法、序列化、状态迁移、Repository 规则和错误映射。
-- 组件测试：用户可见状态、交互、导航和可访问语义。
-- 集成测试：数据库、文件、平台插件和跨层完整闭环。
-- 人工验证：自动化难以可靠判断的视觉、动效、性能、真机和系统交互（例如后台运行、系统权限），这些要单独标注，不能用模拟器或单元测试推断。
+- Unit tests: pure models, algorithms, serialisation, state transitions, repository rules and error mapping.
+- Component tests: user-visible states, interactions, navigation and accessibility semantics.
+- Integration tests: databases, files, platform plugins and complete cross-layer flows.
+- Manual verification: visuals, motion, performance, real devices and system interactions that automation can't judge reliably (background execution, system permissions). Mark these separately; they can't be inferred from simulators or unit tests.
 
-选能最直接证明风险的最低成本层级。
+Pick the cheapest level that proves the risk most directly.
 
-## 编写规则
+## Writing tests
 
-- 测试名称描述条件和可观察的结果；每个测试只验证一个行为原因。
-- 使用确定的输入和可控依赖：随机源用固定种子，时间用可控时钟，不依赖真实网络、随机顺序或任意等待。
-- 概率或分布测试使用固定样本和合理容差，并与规则级测试并存。
-- 文件和数据库测试使用隔离的临时环境并清理。
-- 断言公开行为、状态和持久化结果，不锁死私有函数或无关的界面结构。
-- Bug 回归测试要能在旧实现上失败、修复后通过。
-- 不删除失败测试、不弱化断言、不制造 Mock 成功来掩盖问题。
+- Test names describe the condition and the observable result; each test checks one behavioural reason.
+- Use deterministic inputs and controllable dependencies: fixed seeds for randomness, controllable clocks for time; no real network, random ordering or arbitrary waits.
+- Probability or distribution tests use fixed samples and sensible tolerances, alongside rule-level tests.
+- File and database tests use isolated temporary environments and clean up.
+- Assert public behaviour, state and persisted results; don't lock in private functions or unrelated UI structure.
+- A bug regression test must fail on the old implementation and pass after the fix.
+- Never delete failing tests, weaken assertions or fabricate mock success to hide a problem.
 
-## 执行与报告
+## Running and reporting
 
-先运行最相关的测试，再按影响扩大到静态分析、完整测试和构建（命令以项目规定为准）。报告实际执行的命令和结果、未执行或受阻的检查及原因、剩余风险；复杂或高风险变更再补充覆盖矩阵、人工检查范围和后续门禁。
+Run the most relevant tests first, then widen to static analysis, the full suite and builds according to impact (using the project's commands). Report the commands actually run and their results, checks not run or blocked and why, and remaining risks; for complex or high-risk changes add a coverage matrix, the manual-check scope and follow-up gates.

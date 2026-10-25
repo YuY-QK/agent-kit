@@ -1,140 +1,142 @@
 ---
 name: idea-to-plan
-description: 把一个新的 App 或产品想法，按固定流程逐步完善成一套完整计划：想法简报、产品需求文档（PRD）、原型图、技术设计、开发计划，最后接入项目的 AGENTS.md，再进入实施。用户说“我有个想法”“想做个 App/小工具/网站”“帮我把这个想法完善一下”“写 PRD / 需求文档 / 原型图 / 开发计划”，或想在动手写代码之前先把方案想清楚时，都使用本技能，即使用户没有提到“计划书”。只是按已确认的需求写代码或修 bug 时不使用。
+description: Turn a new app or product idea into a complete plan step by step — idea brief, product requirements document (PRD), prototype, technical design, development plan — then wire it into the project's AGENTS.md before implementation starts. Use this whenever the user says they have an idea, wants to build an app, tool or website, asks to flesh out an idea, or asks for a PRD, requirements, prototype/wireframes or a development plan, or wants to think a solution through before writing code — even if they never say "plan". Do not use it when the task is only implementing already-confirmed requirements or fixing a bug.
 ---
 
-# 想法到计划书
+# Idea to plan
 
-用户的习惯是：先把想法完善成一个完整、全面的整体，形成计划书（产品文档和原型图），再基于计划实施。用户是独立开发者，没有学过设计，常用 Flutter 做移动端，也做单文件网页。本技能把这个习惯固定成一条可重复的流程，让每个项目的文档结构一致，后续 AI 实施时有据可依。
+First refine the idea into a complete, coherent whole — a plan made of product documents and a prototype — and only then implement from that plan. This skill turns that habit into a repeatable process so every project has the same document structure and later implementation has something solid to follow.
 
-## 核心原则
+Before starting, read “About me” in the global rules — solo or team, design experience, usual tech stacks, whether the user has their own scaffold — and adapt your questions and outputs to it.
 
-- **一次只推进一个阶段。** 每个阶段产出后停下来，请用户确认或修改，再进入下一阶段。一次写完所有文档，往往会把未经确认的假设层层放大。
-- **问清楚，不编造。** 用户没说清的地方，先问；暂时问不清的，写进文档末尾的“未决问题”，不要自己替用户拍板。
-- **区分四种状态：** “当前实现”“目标需求”“建议方案”“尚未确认的假设”。你的建议要标明是建议。
-- **全面但有边界。** 每份文档都要有“明确不做”。第一版越小，越早能验证想法。发现范围在膨胀时直接提醒用户。
-- **先验证最大的风险。** 如果某个核心假设很不确定（比如玩法是否有趣、技术上能否实现），建议先做一个最小原型验证它，再写完整的 PRD。
+## Principles
 
-## 第 0 步：确定文档放在哪里
+- **One stage at a time.** Stop after each stage and ask the user to confirm or change it before moving on. Writing every document in one go tends to compound unconfirmed assumptions.
+- **Ask, don't invent.** Ask about anything the user hasn't made clear. What can't be settled yet goes into “Open questions” at the end of the document; don't decide it for the user.
+- **Keep four states apart:** “current implementation”, “target requirement”, “proposal” and “unconfirmed assumption”. Label your suggestions as suggestions.
+- **Complete but bounded.** Every document has a “Not doing” section. The smaller the first version, the sooner the idea gets validated. Say so directly when scope starts to creep.
+- **Validate the biggest risk first.** If a core assumption is very uncertain (is the core loop fun, is it technically feasible), suggest a minimal prototype to test it before writing the full PRD.
 
-- 如果在某个项目目录里工作（不同电脑上的位置可能不同，以当前打开的项目根目录为准，不要假设固定路径），文档放在项目根目录的 `docs/`，格式为 Markdown，文件名沿用用户已有的命名：`IDEA_BRIEF_v1.0.md`、`PRD_v1.0.md`、`PROTOTYPE_v1.0.md`、`TECH_DESIGN_v1.0.md`、`DEVELOPMENT_PLAN_v1.0.md`、`ADR_001_<主题>.md`。
-- 如果还没有项目目录，先问用户要不要新建一个；用户只想先聊聊时，就在对话里推进，或者用 Claude Docs 文档承载，等想法定型后再落到项目里。
-- 已经存在的文档，先读，再在原有内容上改，不要另起一份。
+## Step 0: decide where the documents live
 
-## 第 1 步：澄清想法 → 想法简报
+- When working inside a project folder (its location may differ between computers — always use the currently open project root, never assume a fixed path), documents go in the project's `docs/` as Markdown, following the user's existing naming: `IDEA_BRIEF_v1.0.md`, `PRD_v1.0.md`, `PROTOTYPE_v1.0.md`, `TECH_DESIGN_v1.0.md`, `DEVELOPMENT_PLAN_v1.0.md`, `ADR_001_<topic>.md`.
+- If there is no project folder yet, ask whether to create one. If the user only wants to talk it through first, work in the conversation or in whatever document tool the current environment offers, and move it into a project once the idea settles.
+- If a document already exists, read it and build on it rather than starting a new one.
 
-先当一个会挑刺的讨论伙伴。每轮问 3 到 5 个最关键的问题，不要一次抛出一长串。重点弄清楚：
+## Step 1: clarify the idea → idea brief
 
-1. 一句话说清：给谁用、解决什么问题
-2. 目标用户和 2 到 3 个核心使用场景
-3. 核心循环：用户每次打开它，做什么、得到什么、为什么会再来
-4. 和现有产品比，有什么不同；为什么值得做
-5. 第一版最小能用的样子
-6. 明确不做的事
-7. 最大的风险或最不确定的假设，以及怎么最快验证
-8. 平台和技术倾向（Flutter App、网页、两者都要）以及是否需要后端、账号、付费
+Act as a critical sparring partner. Ask 3–5 of the most important questions per round rather than a long list at once. Find out:
 
-产出《想法简报》（一页左右），结构：
+1. In one sentence: who it is for and what problem it solves
+2. Target users and 2–3 core usage scenarios
+3. The core loop: what the user does each time they open it, what they get, and why they come back
+4. How it differs from existing products, and why it is worth building
+5. What the smallest usable first version looks like
+6. What is explicitly not being done
+7. The biggest risk or least certain assumption, and the fastest way to validate it
+8. Platform and technical leaning (mobile app, web, both) and whether it needs a backend, accounts or payments
 
-```
-# <项目名> 想法简报
-## 一句话
-## 目标用户与核心场景
-## 核心循环
-## 差异与价值
-## 第一版范围
-## 明确不做
-## 风险与验证方式
-## 未决问题
-```
-
-**关口：** 用户确认简报后，再写 PRD。如果“风险与验证方式”里有很大的不确定性，先提议做一个最小原型。
-
-## 第 2 步：产品需求文档（PRD）
-
-按以下结构写，和用户已有项目的 PRD 保持一致：
+Produce an **idea brief** (about one page):
 
 ```
-# 《<项目名>》产品需求文档
-## 1. 文档信息（版本、名词统一、变更记录）
-## 2. 产品定位（一句话、核心价值、产品原则）
-## 3. 目标与成功标准（这一版要达成什么，怎么判断成功）
-## 4. 用户与核心场景
-## 5. 产品范围（包含 / 明确不包含 / 后续候选）
-## 6. 核心规则与核心循环
-## 7. 页面与交互总览（页面清单 P00、P01…，页面关系）
-## 8. 各页面需求（每页：目的、元素、操作规则、页面状态）
-## 9. 数据与内容（需要哪些数据、内容从哪里来）
-## 10. 异常与边界（空、加载、错误、取消、恢复）
-## 11. 验收标准（可观察、可验证）
-## 12. 未决问题
+# <Project> idea brief
+## In one sentence
+## Target users and core scenarios
+## Core loop
+## Difference and value
+## First version scope
+## Not doing
+## Risks and how to validate them
+## Open questions
 ```
 
-规则要写到能直接实现的程度：点击之后发生什么、什么时候算完成、失败了怎么办。页面编号从这一步开始固定，后面的原型、技术设计和开发计划都沿用同一套编号。
+**Gate:** write the PRD only after the user confirms the brief. If “Risks and how to validate them” shows major uncertainty, propose a minimal prototype first.
 
-PRD 往往很长，按章节分批写，每写完几章就给用户看一次。
+## Step 2: product requirements document (PRD)
 
-## 第 3 步：原型图
-
-用户没有学过设计，所以由你提出视觉方向，再让用户选：
-
-1. 先给 2 到 3 个风格方向（每个一句话加关键词，比如“温暖手绘、圆角、柔和色”），请用户选一个。
-2. 写 `PROTOTYPE_v1.0.md`：信息架构、页面总表、每页的布局说明（区域从上到下有什么、每个控件的作用和状态），以及通用弹层、空/加载/错误状态的规范。
-3. 再做一个能看的原型：单文件 HTML 可点击原型（放在 `docs/` 下，浅色和深色都要能看，手机宽度不横向滚动），或者用 Claude 的 Design 画布，用户想直接在画布上改时用后者。
-4. 视觉方向确定后，可以把颜色、字体、间距、圆角整理成 `UI_DESIGN_SYSTEM_v1.0.md`，后续页面都按它来。
-
-**关口：** 原型和 PRD 对不上时，先指出冲突，问用户以哪个为准，再同步修改另一份。
-
-## 第 4 步：技术设计
-
-写 `TECH_DESIGN_v1.0.md`：
+Use this structure, matching the user's existing PRDs:
 
 ```
-# 《<项目名>》技术设计文档
-## 1. 文档目的与范围
-## 2. 质量属性与非功能目标（性能、离线、隐私、包体等）
-## 3. 总体架构（技术选型及理由、组件关系、目录结构）
-## 4. 状态与数据模型
-## 5. 核心逻辑与算法
-## 6. 持久化、网络与外部集成
-## 7. 安全与隐私
-## 8. 测试策略
-## 9. 未决问题
+# <Project> product requirements
+## 1. Document info (version, glossary, change log)
+## 2. Positioning (one sentence, core value, product principles)
+## 3. Goals and success criteria (what this version must achieve, how success is judged)
+## 4. Users and core scenarios
+## 5. Scope (included / not included / later candidates)
+## 6. Core rules and core loop
+## 7. Screens and interaction overview (screen list P00, P01…, how screens connect)
+## 8. Requirements per screen (purpose, elements, interaction rules, states)
+## 9. Data and content (what data is needed, where content comes from)
+## 10. Errors and edge cases (empty, loading, failure, cancel, recovery)
+## 11. Acceptance criteria (observable and verifiable)
+## 12. Open questions
 ```
 
-- Flutter 项目优先用用户自己的脚手架 `app_factory`（模板来自 `app_flutter_common`），沿用它的分层：页面/组件 → Controller 或 Use Case → Repository → DataSource 或 PlatformAdapter。
-- 单文件网页项目：算法或业务逻辑写成不碰界面的纯函数，和渲染分开，方便以后迁移到 App。
-- 有多个可选方案的重要决定（比如本地存储选型、是否需要后端），给出比较和推荐，用户拍板后写成 ADR。
+Write rules precisely enough to implement directly: what happens after a tap, when something counts as done, what happens on failure. Screen numbers are fixed from this step on; the prototype, technical design and development plan all use the same numbering.
 
-## 第 5 步：开发计划
+PRDs get long. Write them in batches of chapters and show the user every few chapters.
 
-写 `DEVELOPMENT_PLAN_v1.0.md`：
+## Step 3: prototype
+
+If the global rules say the user has no design training, propose the visual direction yourself and let them choose; if they have design experience, follow their designs:
+
+1. Offer 2–3 style directions (one sentence plus keywords each, e.g. “warm hand-drawn, rounded, soft colours”) and ask the user to pick one.
+2. Write `PROTOTYPE_v1.0.md`: information architecture, screen list, a layout description per screen (what each area contains from top to bottom, what each control does and its states), and shared rules for dialogs and empty/loading/error states.
+3. Make a prototype the user can look at: a single-file clickable HTML prototype in `docs/` (readable in light and dark mode, no horizontal scrolling at phone width), or a design canvas if the environment offers one and the user wants to edit it directly.
+4. Once the visual direction is settled, you can capture colours, type, spacing and corner radii in `UI_DESIGN_SYSTEM_v1.0.md` for all later screens.
+
+**Gate:** when the prototype and PRD disagree, point out the conflict, ask which one is right, then update the other.
+
+## Step 4: technical design
+
+Write `TECH_DESIGN_v1.0.md`:
 
 ```
-# <项目名> 开发计划
-## 1. 计划目标与边界（交付目标 / 明确不纳入）
-## 2. 里程碑总览（M0 基础、M1 核心循环……最后是稳定化与发布）
-## 3. 分阶段任务（每个里程碑：任务、产出、完成标准）
-## 4. 所需资源与缺失输入（图片、音频、文案、账号、服务端……做成一张总表）
-## 5. 依赖与门禁
-## 6. 测试与质量门禁
-## 7. 风险与应对
-## 8. 需求到里程碑追踪（PRD 的每个页面或规则落在哪个里程碑）
-## 9. M0 启动清单
+# <Project> technical design
+## 1. Purpose and scope
+## 2. Quality attributes and non-functional goals (performance, offline, privacy, size…)
+## 3. Overall architecture (technology choices and reasons, components, folder structure)
+## 4. State and data model
+## 5. Core logic and algorithms
+## 6. Persistence, networking and integrations
+## 7. Security and privacy
+## 8. Testing strategy
+## 9. Open questions
 ```
 
-M1 应该尽早让核心循环跑起来，哪怕界面很简陋，这样能最早发现想法本身的问题。
+- If the global rules name the user's own scaffold, start new projects from it and follow its structure. Recommended layering for Flutter: screens/widgets → controller or use case → repository → data source or platform adapter.
+- Single-file web projects: write business or algorithm logic as pure functions that don't touch the UI, separate from rendering, so they can move into an app later.
+- For important decisions with several options (local storage choice, whether a backend is needed), compare them and recommend one; once the user decides, record it as an ADR.
 
-## 第 6 步：接入项目，准备实施
+## Step 5: development plan
 
-1. 项目根目录放 `AGENTS.md`：以用户 agent-kit 仓库里的 `templates/project/AGENTS.md` 为准（模板只放协作框架，不放业务规则）。装了 agent-kit 时用它的 `scripts/new-project.sh` 生成；找不到模板时先问用户。只填写“文档路由”里的文件路径、Skill 名称和项目命令。
-2. 同时放一个 `CLAUDE.md`，内容只有一行 `@AGENTS.md`，让 Claude Code 和 Codex 读到同一份规则。
-3. 列出 M0 启动清单，问用户从哪一项开始实施。
+Write `DEVELOPMENT_PLAN_v1.0.md`:
 
-## 轻量模式
+```
+# <Project> development plan
+## 1. Goals and boundaries (deliverables / explicitly excluded)
+## 2. Milestones (M0 foundation, M1 core loop … finally stabilisation and release)
+## 3. Tasks per milestone (tasks, outputs, done-criteria)
+## 4. Required resources and missing inputs (images, audio, copy, accounts, backend… as one table)
+## 5. Dependencies and gates
+## 6. Testing and quality gates
+## 7. Risks and mitigations
+## 8. Requirements-to-milestone trace (which milestone covers each screen or rule in the PRD)
+## 9. M0 kickoff checklist
+```
 
-小工具或周末项目不需要五份文档。用户说“简单点”或想法本身很小时，合成一份《计划书》：一句话、范围与不做、页面和交互、原型（HTML）、技术方案、开发步骤、未决问题。流程不变，只是篇幅更短。
+M1 should get the core loop running as early as possible, even with a rough UI, to surface problems with the idea itself early.
 
-## 回头修改
+## Step 6: wire it into the project and prepare to implement
 
-实施过程中需求变了，先改对应的权威文档（需求改 PRD，页面改原型，技术改技术设计或新增 ADR），在文档信息里记一条变更，再改代码。不要只改代码让文档过期。
+1. Put an `AGENTS.md` at the project root, generated with agent-kit's `scripts/new-project.sh` (the template holds only the collaboration framework, no business rules); if agent-kit isn't installed, ask the user first. Fill in only the file paths in “Document routing”, the skill names and the project commands.
+2. Add a `CLAUDE.md` containing the single line `@AGENTS.md`, so Claude Code and Codex read the same rules.
+3. List the M0 kickoff checklist and ask the user which item to start with.
+
+## Light mode
+
+A small tool or weekend project doesn't need five documents. When the user says “keep it simple” or the idea is small, combine everything into one **plan**: one sentence, scope and not-doing, screens and interactions, prototype (HTML), technical approach, development steps, open questions. Same process, shorter.
+
+## Changing course
+
+When requirements change during implementation, update the authoritative document first (requirements in the PRD, screens in the prototype, technical choices in the technical design or a new ADR), add a change-log entry, then change the code. Never change only the code and let the documents go stale.

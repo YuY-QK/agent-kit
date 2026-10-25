@@ -1,0 +1,12 @@
+# 组装中文规则时使用的文字
+LANGNAME_en='英文'
+LANGNAME_zh_CN='简体中文'
+LANGNAME_zh_TW='繁体中文'
+LANGNAME_ja='日文'
+LANGNAME_ko='韩文'
+LANGNAME_es='西班牙文'
+LANGNAME_fr='法文'
+LANGNAME_de='德文'
+STACK_flutter='Flutter 移动端'
+STACK_web='单文件网页'
+LIST_SEP='、'

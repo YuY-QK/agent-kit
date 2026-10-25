@@ -1,40 +1,40 @@
 ---
 name: architecture-change
-description: 设计或审查跨模块架构、依赖方向、数据库、文件格式、网络与外部集成、长任务、支付、权限和安全边界。用于结构性变更；局部界面或简单函数修改时不用。
+description: Design or review cross-module architecture, dependency direction, databases, file formats, networking and integrations, long-running tasks, payments, permissions and security boundaries. Use it for structural changes; don't use it for local UI tweaks or simple function edits.
 ---
 
-# 架构与边界变更
+# Architecture and boundary changes
 
-为结构性变更给出可演进、可迁移、可回滚、可验证，并且不过度设计的方案。
+Give structural changes a design that can evolve, migrate, roll back and be verified — without over-engineering.
 
-## 读取资料
+## Read the material
 
-- 从项目 `AGENTS.md` 的文档路由找到技术设计、ADR、数据或接口规范，只读会影响本次变更的章节。
-- 接口、文件格式、数据库、权限或发布边界变化时，同时读取并维护对应的契约、迁移说明和发布清单。
-- 产品范围或权益变化时核对 PRD；还没有产品文档时，先请用户确认关键契约。
-- 文档描述目标，代码和测试证明现状，两者不要混淆。
+- Use the document routing in the project's `AGENTS.md` to find the technical design, ADRs and data or interface specifications, and read only the sections that affect this change.
+- When interfaces, file formats, databases, permissions or release boundaries change, also read and maintain the matching contracts, migration notes and release checklists.
+- When product scope or entitlements change, check the PRD; if there is no product document yet, ask the user to confirm the key contracts first.
+- Documents describe the target; code and tests prove the current state. Don't mix them up.
 
-## 先定义边界
+## Define the boundaries first
 
-明确：要解决的问题、约束、非目标和质量要求；权威数据源、派生数据、所有者和生命周期；模块职责、依赖方向、输入输出和失败传播；同步/异步、并发、取消、重试、幂等和原子提交；兼容、迁移、回滚、恢复和可观测性；隐私、安全、离线和外部服务故障的影响。
+Make explicit: the problem, constraints, non-goals and quality requirements; the authoritative data source, derived data, owners and lifecycle; module responsibilities, dependency direction, inputs/outputs and how failures propagate; sync/async, concurrency, cancellation, retries, idempotency and atomic commits; compatibility, migration, rollback, recovery and observability; and the impact of privacy, security, offline use and external-service failures.
 
-## 方案原则
+## Design principles
 
-- 需要在真实方案间取舍时，比较当前方案和至少一个可信替代方案；唯一合理的小变更不必硬凑比较。
-- 优先单一权威数据源、局部变更能力和清晰边界，不以层数或接口数量衡量架构质量。
-- 界面层不直接访问数据库、文件、HTTP、支付 SDK 或安全存储。
-- 本地核心功能不依赖网络；远程故障不能破坏本地已保存的数据。
-- 开发期的 Mock 和正式数据源通过同一个 Repository/DataSource 边界替换。
-- 不为未经批准的未来功能建设通用平台、插件系统或抽象层。
-- 破坏数据或协议兼容的方案，先获得明确批准，并定义版本、迁移、回滚和测试。
-- 用户拍板的重要决定写成 ADR。
+- When there is a real trade-off, compare the current approach with at least one credible alternative; don't force a comparison for a small change with only one sensible option.
+- Prefer a single source of truth, local changeability and clear boundaries; the number of layers or interfaces is not a measure of quality.
+- The UI layer never talks to databases, files, HTTP, payment SDKs or secure storage directly.
+- Core local functionality doesn't depend on the network; remote failures must not damage data already saved locally.
+- Development mocks and real data sources are swapped behind the same repository/data-source boundary.
+- Don't build general platforms, plugin systems or abstraction layers for features that haven't been approved.
+- Designs that break data or protocol compatibility need explicit approval first, plus versioning, migration, rollback and tests.
+- Record important decisions the user signs off on as ADRs.
 
-## 高风险门禁
+## High-risk gates
 
-数据库、文件格式、缓存、备份、支付、许可证、密钥和平台权限的变化，要覆盖：旧版本读取与升级失败；中断、重复执行和部分成功；损坏、伪造、越界、超大输入和空间不足；临时区校验、原子提交和失败清理；日志脱敏。
+Changes to databases, file formats, caches, backups, payments, licences, keys and platform permissions must cover: reading and upgrading old versions and upgrade failures; interruption, repeated runs and partial success; corrupted, forged, out-of-range, oversized input and full disks; staging-area validation, atomic commit and cleanup on failure; and redaction in logs.
 
-真实支付接入前要确认：商品与价格来源、购买状态机、收据验证或服务端边界、恢复购买和幂等发放；没确认前不实现假成功。
+Before integrating real payments, confirm the product and price source, the purchase state machine, receipt validation or the server boundary, restore purchases and idempotent fulfilment; until then, never implement a fake success.
 
-## 输出
+## Output
 
-说明支撑决策所需的背景、约束、当前结构、候选方案、推荐决策与代价、模块和数据流、失败语义、迁移与回滚、测试策略、文档影响和未决问题，只写与本次变更相关的部分。用户只要求设计或评审时，不实施变更。
+Describe the background, constraints, current structure, options, recommended decision and its cost, modules and data flow, failure semantics, migration and rollback, testing strategy, documentation impact and open questions — only the parts relevant to this change. When the user only asked for a design or review, don't implement it.

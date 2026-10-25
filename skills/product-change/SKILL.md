@@ -1,43 +1,43 @@
 ---
 name: product-change
-description: 设计或审查产品需求、PRD、功能范围、业务规则、用户流程和验收标准，并控制需求变更。用于确认“产品应该怎么表现”；全新想法从零做计划用 idea-to-plan，只按已确认需求写代码时不用本技能。
+description: Design or review product requirements, PRDs, feature scope, business rules, user flows and acceptance criteria, and control requirement changes. Use it to settle how the product should behave. For planning a brand-new idea from scratch use idea-to-plan; don't use this when only implementing already-confirmed requirements.
 ---
 
-# 产品变更
+# Product change
 
-把产品想法或变更请求转化为边界清楚、可实现、可验证的产品契约，同时区分当前实现和目标需求。
+Turn a product idea or change request into a product contract that is clearly bounded, implementable and verifiable, while keeping the current implementation and the target requirement apart.
 
-## 先建立事实
+## Establish the facts first
 
-- 从项目 `AGENTS.md` 的文档路由找到 PRD、原型和项目规则，只读取与本次决策相关的章节。
-- 需要确认当前实现或完成状态时，用代码、测试和开发计划核对；涉及页面时读原型，涉及发布范围时读发布资料。
-- 不把 PRD 目标写成已实现，也不把现有的占位行为反向固化为产品要求。
+- Use the document routing in the project's `AGENTS.md` to find the PRD, prototype and project rules, and read only the sections relevant to this decision.
+- When you need the current implementation or completion status, check it against code, tests and the development plan; read the prototype for screens and the release material for release scope.
+- Don't present PRD targets as implemented, and don't turn existing placeholder behaviour into a product requirement.
 
-## 定义产品契约
+## Define the product contract
 
-按任务需要明确：
+As the task requires, make explicit:
 
-- 问题、目标用户、使用场景和价值。
-- 当前行为、目标行为以及两者的差距。
-- 范围内、范围外和明确不做。
-- 前置条件、主流程、替代流程和结束条件。
-- 正常、空、加载、失败、离线、禁用、权限拒绝、取消和恢复状态。
-- 数据归属、权益、隐私、安全和外部依赖。
-- 可以通过测试或人工检查观察到的验收标准。
+- The problem, target users, scenarios and value.
+- Current behaviour, target behaviour and the gap between them.
+- In scope, out of scope and explicitly not doing.
+- Preconditions, main flow, alternative flows and end conditions.
+- Normal, empty, loading, failed, offline, disabled, permission-denied, cancelled and recovered states.
+- Data ownership, entitlements, privacy, security and external dependencies.
+- Acceptance criteria that can be observed through tests or manual checks.
 
-需求与已确认的 PRD 冲突时，列出原规则、拟变更、原因、影响范围和验收变化，请用户决定。用户没有授权修改产品基线时，不静默改写 PRD，也不实现冲突方案。
+When a request conflicts with the confirmed PRD, list the original rule, the proposed change, the reason, the affected scope and how acceptance changes, and let the user decide. Without the user's authorisation to change the product baseline, don't silently rewrite the PRD or implement the conflicting version.
 
-## 控制方案质量
+## Keep the proposal sound
 
-- 优先闭合一条用户价值链路，不把相邻想法一起塞进来。
-- 不用占位入口、假数据、本地成功状态或兑现不了的文案制造完成感。
-- 不把实现细节写成产品规则；只有技术约束会改变体验或验收时才写入。
-- 不可逆、付费、删除、上传和长任务操作，要定义确认、取消、失败和恢复。
-- 不为尚未确定的商品、价格、支付渠道或服务端行为编造正式规则。
-- 每条验收标准只描述可观察的结果。
+- Close one user value chain first; don't pull neighbouring ideas in with it.
+- Don't create a sense of completion with placeholder entries, fake data, local success states or copy that can't be honoured.
+- Don't write implementation details as product rules; include technical constraints only when they change the experience or the acceptance criteria.
+- For irreversible, paid, deleting, uploading and long-running actions, define confirmation, cancellation, failure and recovery.
+- Don't invent formal rules for undecided products, prices, payment channels or server behaviour.
+- Each acceptance criterion describes only an observable result.
 
-## 输出
+## Output
 
-给出结论及依据，并按任务需要覆盖：当前与目标、范围与不做、关键规则、状态与边界、验收标准、对界面/数据/开发/测试/文档的影响、待决问题。小的规则澄清只说明变化的部分。
+State the conclusion and its basis, and as the task requires cover: current vs target, scope and not-doing, key rules, states and edge cases, acceptance criteria, impact on UI/data/development/testing/docs, and open questions. For a small rule clarification, describe only what changes.
 
-用户只要求产品设计时，到此为止，不实施代码。确认后的变化写回 PRD 或决策记录。
+When the user only asked for product design, stop here and don't implement code. Write confirmed changes back into the PRD or a decision record.

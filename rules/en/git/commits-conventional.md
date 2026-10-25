@@ -1,0 +1,1 @@
+- Keep each commit to one purpose and use the prefixes `feat:`, `fix:`, `test:`, `docs:`, `refactor:` and `chore:`.

@@ -1,51 +1,51 @@
 ---
 name: change-review
-description: 审查代码、测试或文档变更是否存在产品语义、正确性、数据安全、架构、隐私和回归问题。用于代码审查和交付前检查，默认只报告不修改；用户已经要求直接实现修改时不用。
+description: Review code, test or documentation changes for problems in product semantics, correctness, data safety, architecture, privacy and regressions. Use it for code review and pre-delivery checks; it reports by default and doesn't edit. Don't use it when the user has asked you to implement the change directly.
 ---
 
-# 变更审查
+# Change review
 
-目标是发现真实缺陷和交付风险，不用风格偏好凑数。默认只报告，用户明确要求修复时才动手。
+The goal is to find real defects and delivery risks, not to fill the report with style preferences. Report by default; fix only when the user explicitly asks.
 
-## 确定范围
+## Set the scope
 
-- 读取改动涉及的项目规则、PRD、技术、接口或格式章节；局部改动不加载无关资料。
-- 检查工作树、目标 diff、相关调用方、配置和测试，区分本次变更与用户已有的修改。
-- 用 PRD 判断目标语义，用代码和测试判断当前实现；测试本身也是审查对象。
-- 不把无关的历史问题扩大进来，除非它直接影响本次变更的正确性。
+- Read the project rules, PRD, technical, interface or format sections the change touches; don't load unrelated material for a local change.
+- Inspect the working tree, the target diff, relevant callers, configuration and tests, and separate this change from the user's existing modifications.
+- Judge the target semantics by the PRD and the current implementation by code and tests; the tests themselves are under review too.
+- Don't widen the review to unrelated historical problems unless they directly affect the correctness of this change.
 
-## 审查顺序
+## Review order
 
-1. 产品语义、范围，以及有没有伪造完成状态。
-2. 数据损坏、兼容、迁移和恢复。
-3. 正确性、边界、异步和生命周期。
-4. 隐私、安全、权限和日志。
-5. 架构职责、依赖方向和单一权威数据源。
-6. 回归测试、失败路径和验证证据。
-7. 可维护性、复杂度和文档一致性。
+1. Product semantics, scope, and whether completion is being faked.
+2. Data corruption, compatibility, migration and recovery.
+3. Correctness, boundaries, async behaviour and lifecycle.
+4. Privacy, security, permissions and logging.
+5. Architectural responsibilities, dependency direction and single source of truth.
+6. Regression tests, failure paths and verification evidence.
+7. Maintainability, complexity and documentation consistency.
 
-格式化或现有 lint 能稳定发现的纯风格问题不报，除非它暴露了真实缺陷。项目有专属规则或不变量（写在项目文档或项目技能里）时，一并核对。
+Don't report pure style issues that formatters or existing linters catch reliably, unless they expose a real defect. When the project has its own rules or invariants (in project docs or project skills), check them too.
 
-## 重点检查
+## What to look for
 
-- 未完成的能力是否显示成了成功，Mock 是否漏进正式路径。
-- 界面层是否直接访问数据库、文件、网络、支付或协议细节。
-- 写入是否可能部分成功、覆盖好数据、丢失取消或重试状态。
-- 异步结果是否可能在对象销毁或输入变化后覆盖新状态。
-- 错误是否被吞掉，错误分类是否依赖脆弱的字符串，日志是否含敏感数据。
-- 格式或 Schema 改动是否缺少版本、迁移、回滚和旧数据测试。
-- 测试是否只验证实现细节，或把错误的产品行为固化成了期望。
-- 文档和实施状态是否与实际完成度一致。
+- Unfinished capabilities shown as successful, or mocks leaking into production paths.
+- The UI layer touching databases, files, the network, payments or protocol details directly.
+- Writes that can partially succeed, overwrite good data, or lose cancellation or retry state.
+- Async results that can overwrite newer state after an object is disposed or its input changes.
+- Swallowed errors, error classification that depends on fragile strings, logs containing sensitive data.
+- Format or schema changes without versioning, migration, rollback and tests against old data.
+- Tests that only check implementation details, or that cement wrong product behaviour as expected.
+- Documentation and implementation status that don't match actual completeness.
 
-## 严重度
+## Severity
 
-- `P0`：可能造成数据损坏、安全事故、严重隐私问题、错误收费或不可恢复的结果。
-- `P1`：主要功能错误、明确的产品语义冲突或高概率回归。
-- `P2`：重要边界遗漏、恢复能力不足、架构倒置或关键测试缺口。
-- `P3`：不阻断但有明确收益的维护性改进。
+- `P0`: may cause data corruption, a security incident, a serious privacy problem, wrong charges or unrecoverable results.
+- `P1`: a major functional error, a clear conflict with product semantics, or a likely regression.
+- `P2`: an important missed boundary, weak recovery, inverted architecture or a key testing gap.
+- `P3`: a non-blocking maintainability improvement with a clear benefit.
 
-严重度描述影响，不描述个人偏好。
+Severity describes impact, not personal preference.
 
-## 输出
+## Output
 
-先按严重度列出问题，每项包含准确的文件与行号、触发条件、实际影响和可行的修正方向；需要时补充未决问题和验证缺口。没有发现问题时，明确写“未发现阻断问题”，并说明审查范围、已验证内容和仍未覆盖的风险。
+List findings first, ordered by severity. Each has the exact file and line, the trigger condition, the real impact and a workable direction for the fix; add open questions and verification gaps where needed. If nothing is found, say “no blocking issues found” and state the review scope, what was verified and which risks remain uncovered.

@@ -1,0 +1,1 @@
+- I have no design training: for UI and visual work, propose 2–3 directions with your reasoning and let me choose.

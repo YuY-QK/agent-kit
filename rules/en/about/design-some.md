@@ -1,0 +1,1 @@
+- I am comfortable with design: follow my designs and the project's design system, and raise concerns instead of redesigning.

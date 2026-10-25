@@ -1,56 +1,56 @@
 ---
 name: flutter-development
-description: 实现、修复或重构 Flutter/Dart 代码，遵守分层、Riverpod、本地优先、本地化和 FVM 验证规则。用于 Flutter 项目的编码任务；纯产品或界面方案讨论时不用。
+description: Implement, fix or refactor Flutter/Dart code following layering, Riverpod, local-first, localisation and FVM verification rules. Use it for coding tasks in Flutter projects; don't use it for pure product or UI-proposal discussions.
 ---
 
-# Flutter 开发
+# Flutter development
 
-交付范围小、行为完整、可测试、符合项目边界的 Flutter/Dart 修改。
+Deliver Flutter/Dart changes that are small in scope, complete in behaviour, testable and within the project's boundaries.
 
-## 开始前
+## Before you start
 
-- 读取会影响本次修改的项目规则、PRD、技术或格式章节；局部实现不加载无关资料。
-- 检查 `git status` 和相关调用链，保护用户已有修改；找出相邻实现、通用组件、Provider、Repository 和测试的现有写法。
-- 明确当前行为、目标行为、非目标和完成条件；发现产品或架构冲突先说明。
-- 项目根目录有 `.fvmrc` 时，所有命令用 `fvm` 前缀（`fvm flutter ...`、`fvm dart ...`），使用项目指定的 Flutter 版本。
+- Read the project rules, PRD, technical or format sections that affect this change; don't load unrelated material for a local implementation.
+- Check `git status` and the relevant call chain, and protect the user's existing changes; find how neighbouring code, shared components, providers, repositories and tests are already written.
+- Define current behaviour, target behaviour, non-goals and done-criteria; raise product or architecture conflicts first.
+- When the project root has a `.fvmrc`, prefix every command with `fvm` (`fvm flutter ...`, `fvm dart ...`) to use the project's Flutter version.
 
-## 结构
+## Structure
 
-- 新项目优先用 `app_factory` 脚手架生成，沿用 `app_flutter_common` 模板的结构。
-- 推荐 feature-first：`lib/app`（应用根、路由、配置）、`lib/core`（主题、错误类型、稳定通用能力）、`lib/features/<feature>`；`main.dart` 保持很薄。
-- 依赖方向：页面/组件 → Controller 或 Use Case → Repository → DataSource 或 PlatformAdapter。小功能不强制建空接口或空层。
-- 跨功能共享前先确认它是稳定的共同概念，否则留在所属 feature。
-- 路由集中声明，传参用明确类型或稳定的序列化形式，不拼接字符串路径。
+- If the global rules name the user's own scaffold, generate new projects with it and follow its structure.
+- Prefer feature-first: `lib/app` (app root, routing, configuration), `lib/core` (theme, error types, stable shared capabilities), `lib/features/<feature>`; keep `main.dart` thin.
+- Dependency direction: screens/widgets → controller or use case → repository → data source or platform adapter. Small features don't need empty interfaces or layers.
+- Before sharing code across features, confirm it is a stable shared concept; otherwise keep it in its feature.
+- Declare routes centrally and pass parameters as explicit types or stable serialised forms; don't build route paths by string concatenation.
 
-## 实现原则
+## Implementation principles
 
-- 做最小而完整的改动，不顺手重构邻近模块。
-- Widget 只负责展示、局部交互状态和事件转发，不直接访问数据库、文件、网络、支付 SDK，也不解析协议。
-- Riverpod Provider 负责组合依赖，不保存无法控制生命周期的全局可变状态；异步状态处理重复调用、过期结果、取消和页面销毁。
-- 复杂状态用 sealed class、enum 或状态对象，不堆互斥布尔值和魔法字符串。
-- 随机源、时钟、音频、持久化和平台能力做成可替换的依赖，方便测试。
-- 保存、导出、下载等副作用明确成功、失败、取消、重试和清理语义；不伪造购买、分享或远程成功。
-- 用户可见文字写入 ARB，通过生成流程更新本地化产物，不手改生成文件。
-- 只引入当前需要的依赖；新增或升级包前说明理由、平台影响和锁文件变化。
-- 原生代码改动同时检查对应平台实现和 Gradle/Xcode 配置。
+- Make the smallest complete change; don't refactor neighbouring modules along the way.
+- Widgets only render, hold local interaction state and forward events; they don't touch databases, files, the network or payment SDKs, or parse protocols.
+- Riverpod providers compose dependencies and don't hold global mutable state with an uncontrolled lifecycle; async state handles repeated calls, stale results, cancellation and disposal.
+- Model complex state with sealed classes, enums or state objects rather than piles of mutually exclusive booleans and magic strings.
+- Make randomness, clocks, audio, persistence and platform capabilities replaceable dependencies so they can be tested.
+- Side effects such as saving, exporting and downloading define success, failure, cancellation, retry and cleanup; never fake purchase, share or remote success.
+- User-visible text goes into ARB files and localisation output is regenerated through the generation step; don't edit generated files by hand.
+- Add only the dependencies needed now; before adding or upgrading a package, explain why, the platform impact and the lockfile change.
+- When native code changes, also check the matching platform implementation and Gradle/Xcode configuration.
 
-## Bug 与重构
+## Bugs and refactoring
 
-- Bug 先复现、定位根因，原则上增加在旧实现上失败的回归测试。
-- 重构保持可观察行为，尽量把结构调整和行为修改分开。
-- 删除代码前检查路由、Provider 覆盖、序列化、原生入口和测试调用方。
+- Reproduce a bug and locate the root cause first; normally add a regression test that fails on the old implementation.
+- Refactoring keeps observable behaviour; separate structural changes from behaviour changes where possible.
+- Before deleting code, check routes, provider overrides, serialisation, native entry points and test callers.
 
-## 验证
+## Verification
 
-按风险逐步执行（有 `.fvmrc` 时加 `fvm` 前缀）：
+Step up by risk (prefix with `fvm` when there is a `.fvmrc`):
 
-1. `dart format <改动的文件>`
-2. 直接相关的 `flutter test <测试路径>`
+1. `dart format <changed files>`
+2. The directly relevant `flutter test <test path>`
 3. `flutter analyze`
-4. 范围广、涉及数据或发布的变更：完整 `flutter test` 和必要的平台构建
+4. For broad, data-related or release-related changes: the full `flutter test` and the necessary platform builds
 
-不要并发运行多个 Flutter/Gradle 构建。数据库、文件格式、Repository、安全存储和原生插件变更要补充失败与兼容测试。
+Don't run several Flutter/Gradle builds in parallel. Database, file-format, repository, secure-storage and native-plugin changes need additional failure and compatibility tests.
 
-## 交付
+## Delivery
 
-说明行为变化与关键设计、实际运行的验证、未运行或受阻的检查、兼容性、平台影响和剩余风险。不把计划、占位或 Mock 描述为已完成能力。
+Describe the behaviour change and key design, the verification actually run, checks not run or blocked, compatibility, platform impact and remaining risks. Never describe plans, placeholders or mocks as finished capabilities.

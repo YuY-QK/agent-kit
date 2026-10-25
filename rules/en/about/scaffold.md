@@ -1,0 +1,1 @@
+- New projects start from my own scaffold: {{SCAFFOLD}}. Prefer it over setting projects up from scratch.

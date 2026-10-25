@@ -1,0 +1,1 @@
+- Keep each commit to one purpose with a clear, descriptive message.

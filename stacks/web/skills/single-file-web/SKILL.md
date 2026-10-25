@@ -1,33 +1,33 @@
 ---
 name: single-file-web
-description: 制作或修改不依赖构建工具的单文件网页（演示页、可交互原型、小工具），浏览器直接打开即可运行。用于单个 HTML 文件的页面；需要框架和构建流程的 Web 应用不用。
+description: Build or change single-file web pages that need no build tools and open directly in a browser — demos, clickable prototypes, small tools. Use it for one-HTML-file pages; don't use it for web apps that need a framework and a build pipeline.
 ---
 
-# 单文件网页
+# Single-file web pages
 
-做出一个 HTML 文件就能完整运行、风格一致、以后容易迁移到 App 的网页。
+Produce a web page that runs completely from one HTML file, looks consistent with its siblings and is easy to move into an app later.
 
-## 文件约定
+## File conventions
 
-- 一个 HTML 文件，样式和脚本内联；不依赖 npm 或构建工具，双击即可在浏览器打开。
-- 外部资源尽量不用；字体可用 Google Fonts，并写好回退字体。必须引用的库使用固定版本号的 CDN 地址。
-- 项目里已经有同类页面时，先完整读一遍，沿用它的配色变量、字体、布局和交互写法，让各页面看起来属于同一个系列。
+- One HTML file with inline styles and scripts; no npm or build tools — double-click to open in a browser.
+- Avoid external resources where possible; web fonts are fine with fallback fonts declared. Any library you must reference uses a CDN URL with a pinned version.
+- If the project already has similar pages, read one completely first and reuse its colour variables, fonts, layout and interaction patterns so the pages look like one series.
 
-## 结构
+## Structure
 
-- 把业务或算法逻辑写成不碰 DOM 的纯函数，放在单独的 `<script id="logic">` 中，例如“输入 → 每一步的状态列表”；界面只负责渲染状态和转发操作。这样逻辑可以单独测试，也能复用到 App。
-- 状态集中保存在一个对象里，从状态派生画面，不在多个 DOM 节点里各存一份。
-- 页面内存储（localStorage）只放偏好之类的小数据，读写包在 try/catch 里，存储不可用时页面照常工作。
+- Write business or algorithm logic as pure functions that never touch the DOM, in a separate `<script id="logic">` — for example “input → list of states for each step”. The UI only renders state and forwards actions, so the logic can be tested on its own and reused in an app.
+- Keep state in one object and derive the view from it, instead of storing copies in several DOM nodes.
+- In-page storage (localStorage) holds only small things such as preferences; wrap reads and writes in try/catch so the page still works when storage is unavailable.
 
-## 外观与可用性
+## Look and usability
 
-- 颜色定义为 CSS 变量，同时支持浅色和深色主题（跟随系统，可手动切换时也要兼容）。
-- 手机宽度下不横向滚动，左右留出边距；触控区域足够大。
-- 有动画时尊重 `prefers-reduced-motion`；颜色不是唯一的信息载体。
-- 文字使用简体中文，除非项目另有规定。
+- Define colours as CSS variables and support both light and dark themes (following the system, and compatible with a manual toggle if there is one).
+- No horizontal scrolling at phone width, with side margins; touch targets are large enough.
+- Animations respect `prefers-reduced-motion`; colour is never the only carrier of information.
+- UI text uses the language the project specifies; if it doesn't, use the documents language from the global rules.
 
-## 验证
+## Verification
 
-- 纯函数逻辑用 Node 抽出来测试：对典型输入和大量随机输入检查每一步的状态和最终结果。
-- 在浏览器里检查浅色、深色、手机宽度和桌面宽度；有控制台报错要修掉。
-- 报告实际做过的检查和没做的检查。
+- Extract the pure logic and test it with Node: check every step's state and the final result for typical inputs and many random inputs.
+- Check in a browser at light, dark, phone width and desktop width; fix any console errors.
+- Report which checks were done and which weren't.

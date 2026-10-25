@@ -1,44 +1,44 @@
 ---
 name: ui-experience
-description: 设计或审查页面、交互流程、组件状态、视觉层级、动效、响应式、本地化和可访问性。用于界面方案、原型和界面改动；纯业务逻辑修改时不用。
+description: Design or review screens, interaction flows, component states, visual hierarchy, motion, responsiveness, localisation and accessibility. Use it for UI proposals, prototypes and UI changes; don't use it for pure business-logic changes.
 ---
 
-# 界面与交互
+# UI and interaction
 
-让界面准确表达产品真实能力，在不同状态、屏幕和输入条件下都清晰、可操作、一致。用户没有学过设计，视觉方向由你提出 2 到 3 个选项并说明理由，再请用户选择。
+Make the interface represent what the product can really do, and keep it clear, operable and consistent across states, screen sizes and input conditions. If the global rules say the user has no design training, propose 2–3 visual directions with your reasoning and ask the user to choose.
 
-## 获取上下文
+## Get the context
 
-- 任务触及产品边界、远程能力或高影响操作时，读取项目规则和 PRD 的必要章节。
-- 需要确认目标页面时，对照原型文档中的对应页面（页面编号如 P01），分清现状、目标和占位。
-- 查看现有主题、通用组件和相邻页面，优先沿用已有的设计语言；项目有设计系统文档时以它为准。
-- 用代码和测试确认当前界面，不根据原型推断已经实现。
+- When the task touches product boundaries, remote capabilities or high-impact actions, read the necessary parts of the project rules and the PRD.
+- When you need the target screen, look up the matching screen in the prototype document (screen numbers like P01) and separate what exists, what is targeted and what is a placeholder.
+- Look at the existing theme, shared components and neighbouring screens and keep the established design language; if the project has a design-system document, it wins.
+- Confirm the current UI from code and tests; don't infer from the prototype that something is implemented.
 
-## 流程与状态
+## Flows and states
 
-先确定用户目标、入口、主操作、信息优先级、返回路径和完成反馈。按功能风险检查：
+First settle the user's goal, entry point, primary action, information priority, way back and completion feedback. According to the risk of the feature, check:
 
-- 正常、加载、空、失败和重试。
-- 离线、禁用、权限拒绝和外部能力不可用。
-- 长任务的进度、取消、中断和恢复。
-- 重复点击、快速切换、返回、应用退到后台和数据刷新。
-- 删除、覆盖、购买、上传等高影响操作的说明和确认。
+- Normal, loading, empty, failed and retry.
+- Offline, disabled, permission denied and external capability unavailable.
+- Progress, cancellation, interruption and recovery for long tasks.
+- Repeated taps, quick switching, going back, the app moving to the background and data refreshes.
+- Explanation and confirmation for high-impact actions such as delete, overwrite, purchase and upload.
 
-未接入的远程、支付或实验能力不能显示为成功；入口要么隐藏，要么用真实的禁用或不可用状态说明条件。
+Remote, payment or experimental capabilities that aren't connected must never appear successful; either hide the entry or show a real disabled/unavailable state that explains the condition.
 
-## 视觉与可访问性
+## Visuals and accessibility
 
-- 用层级、留白、对齐和一致的操作位置表达优先级，不靠堆装饰。
-- 优先组合已有组件；只有确实会复用时才新增组件。
-- 检查小屏、系统字体放大、键盘、安全区域、滚动、不同宽高比和触控区域大小。
-- 颜色、声音和动画不能是唯一的信息载体；关键控件要有语义标签和可理解的禁用原因。
-- 动画尊重系统“减少动态效果”设置，避免高频闪烁；动画回调不能成为业务状态的唯一来源。
-- 用户可见文字集中管理（按项目的本地化方式），考虑中英文长度和换行。
+- Express priority with hierarchy, spacing, alignment and consistent action placement rather than piling on decoration.
+- Compose existing components first; add a new component only when it will really be reused.
+- Check small screens, enlarged system fonts, the keyboard, safe areas, scrolling, different aspect ratios and touch-target sizes.
+- Colour, sound and motion must never be the only carrier of information; key controls need semantic labels and understandable reasons when disabled.
+- Motion respects the system's reduce-motion setting and avoids rapid flashing; animation callbacks must not be the only source of business state.
+- User-visible text is managed centrally (using the project's localisation approach), with attention to text length and wrapping across languages.
 
-## 实现边界
+## Implementation boundaries
 
-界面层只展示状态和转发操作，不直接访问数据库、文件、网络、支付或解析协议，也不做业务判定。
+The UI layer only renders state and forwards actions. It doesn't access databases, files, the network or payments directly, parse protocols, or make business decisions.
 
-## 输出
+## Output
 
-按任务规模说明：用户路径、相关状态、复用或新增的组件、响应式/本地化/可访问性处理、验证方式（组件测试和人工视觉检查），以及与 PRD 或原型的差异。用户只要求界面方案或原型时，不修改业务实现。
+Scaled to the task, describe: the user path, relevant states, reused or new components, handling of responsiveness/localisation/accessibility, how it is verified (component tests and manual visual checks), and any differences from the PRD or prototype. When the user only asked for a UI proposal or prototype, don't change business logic.

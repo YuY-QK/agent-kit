@@ -1,43 +1,64 @@
 #!/usr/bin/env bash
-# 给一个项目放入 agent-kit 的项目模板：AGENTS.md、CLAUDE.md、docs/AI_RULES.md。
-# 已存在的文件不会被覆盖。
+# Add agent-kit's project template to a project: AGENTS.md, CLAUDE.md, docs/AI_RULES.md.
+# Existing files are never overwritten. The template language follows CONTENT_LANG
+# in your profile; pass --lang to choose another one.
 #
-# 用法：
-#   scripts/new-project.sh <项目目录> [项目名称]
+# Usage:
+#   scripts/new-project.sh <project-folder> [project-name] [--lang en|zh-CN]
 #
-# 项目名称默认取目录名。生成后请填写 AGENTS.md 和 docs/AI_RULES.md 里 {{...}} 标出的部分。
+# The project name defaults to the folder name. Afterwards, fill in the parts marked {{...}}.
 
 set -eu
 
 KIT_DIR="$(cd "$(dirname "$0")/.." && pwd -P)"
-TEMPLATE_DIR="$KIT_DIR/templates/project"
+# shellcheck disable=SC1091
+. "$KIT_DIR/scripts/lib/common.sh"
+load_settings
+load_messages "$UI_LANG"
 
-if [ $# -lt 1 ]; then
-  sed -n '2,8p' "$0"
+LANG_CHOICE="$CONTENT_LANG"
+ARGS=""
+PROJECT_DIR=""
+PROJECT_NAME=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --lang) shift; LANG_CHOICE="${1:-$CONTENT_LANG}" ;;
+    -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
+    *)
+      if [ -z "$PROJECT_DIR" ]; then PROJECT_DIR="$1"
+      elif [ -z "$PROJECT_NAME" ]; then PROJECT_NAME="$1"
+      fi
+      ;;
+  esac
+  shift
+done
+
+if [ -z "$PROJECT_DIR" ]; then
+  sed -n '2,10p' "$0"
   exit 2
 fi
-
-PROJECT_DIR="$1"
 if [ ! -d "$PROJECT_DIR" ]; then
-  echo "目录不存在：$PROJECT_DIR" >&2
+  say folder_not_found "$PROJECT_DIR" >&2
   exit 1
 fi
+TEMPLATE_DIR="$KIT_DIR/templates/project/$LANG_CHOICE"
+[ -d "$TEMPLATE_DIR" ] || TEMPLATE_DIR="$KIT_DIR/templates/project/en"
 PROJECT_DIR="$(cd "$PROJECT_DIR" && pwd -P)"
-PROJECT_NAME="${2:-$(basename "$PROJECT_DIR")}"
+PROJECT_NAME="${PROJECT_NAME:-$(basename "$PROJECT_DIR")}"
 
-# 替换模板中的项目名；名称里的 / & \ 先转义，避免破坏 sed 表达式
+# escape / & \ in the name so it can't break the sed expression
 escaped_name="$(printf '%s' "$PROJECT_NAME" | sed 's/[\/&\\]/\\&/g')"
 
 (cd "$TEMPLATE_DIR" && find . -type f) | while read -r rel; do
   rel="${rel#./}"
   dest="$PROJECT_DIR/$rel"
   if [ -e "$dest" ]; then
-    echo "已存在，跳过：$rel"
+    say template_exists "$rel"
     continue
   fi
   mkdir -p "$(dirname "$dest")"
   sed "s/{{PROJECT_NAME}}/$escaped_name/g" "$TEMPLATE_DIR/$rel" > "$dest"
-  echo "已创建：$rel"
+  say template_created "$rel"
 done
 
-echo "完成。请填写 AGENTS.md 和 docs/AI_RULES.md 中 {{...}} 标出的部分。"
+say template_done

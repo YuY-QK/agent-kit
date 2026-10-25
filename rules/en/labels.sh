@@ -1,0 +1,12 @@
+# Labels used when assembling rules in English.
+LANGNAME_en='English'
+LANGNAME_zh_CN='Simplified Chinese'
+LANGNAME_zh_TW='Traditional Chinese'
+LANGNAME_ja='Japanese'
+LANGNAME_ko='Korean'
+LANGNAME_es='Spanish'
+LANGNAME_fr='French'
+LANGNAME_de='German'
+STACK_flutter='Flutter (mobile apps)'
+STACK_web='single-file web pages'
+LIST_SEP=', '

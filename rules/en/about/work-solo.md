@@ -1,0 +1,1 @@
+- I develop on my own, not in a team: keep the process lightweight. I am the only reviewer, and decisions that need sign-off come to me.

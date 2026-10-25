@@ -1,0 +1,1 @@
+- Unless I explicitly ask, don't force-push, rewrite remote history or discard my uncommitted changes.
