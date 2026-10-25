@@ -230,22 +230,11 @@ write_profile() {
     echo "# Tools to install for: claude codex"
     echo "TOOLS=\"$TOOLS\""
   } > "$PROFILE_FILE"
-  if [ ! -f "$PROFILE_DIR/README.md" ]; then
-    cat > "$PROFILE_DIR/README.md" <<'EOF'
-# agent-kit profile
-
-Personal settings for [agent-kit](https://github.com/YuY-QK/agent-kit). Keep this folder in a private repository to share it between your computers.
-
-| Path | Contents |
-|---|---|
-| `profile.sh` | Your preferences (languages, about you, workflow, skills, tools) |
-| `rules/*.md` | Extra rules appended to the global rules, in file-name order |
-| `skills/<name>/SKILL.md` | Your own skills, installed next to the shared ones |
-| `overrides/` | Results of merges done in the conflict page; they replace the generated files |
-
-After changing anything here, run `scripts/install.sh` in agent-kit, then `scripts/sync-profile.sh push`.
-EOF
-  fi
+  # describe the profile folder (README in English and Chinese), without replacing your own
+  for f in README.md README.zh-CN.md; do
+    [ -f "$PROFILE_DIR/$f" ] || [ ! -f "$KIT_DIR/templates/profile/$f" ] ||
+      cp "$KIT_DIR/templates/profile/$f" "$PROFILE_DIR/$f"
+  done
 }
 
 # ---------- misc ----------
