@@ -146,7 +146,7 @@ scripts/install.sh
 scripts/sync-profile.sh push    # if your profile is in a private repository
 ```
 
-`scripts/install.sh --configure` does the first two steps in one go.
+`scripts/install.sh --configure` does the first two steps in one go. Projects that carry a copy of your settings for cloud sessions (`enable-cloud.sh --with-profile`) need the command run again to refresh that copy.
 
 ### Add or change your own rules
 
@@ -201,7 +201,14 @@ Rules that come from one project and only make sense there belong in that projec
 
 ### Update a project
 
-A project's own rules live in the project: edit its `AGENTS.md`, `docs/AI_RULES.md` and `docs/progress.md` there and commit them with the project. Nothing in agent-kit needs to change. `scripts/check-projects.sh` reports projects that are missing these files.
+A project's own rules live in the project: edit its `AGENTS.md`, `docs/AI_RULES.md` and `docs/progress.md` there and commit them with the project. Nothing in agent-kit needs to change.
+
+To bring an existing project in line with agent-kit (optional; the global rules already apply to it):
+
+1. `scripts/check-projects.sh <project>` reports what is missing: `AGENTS.md`, a `CLAUDE.md` that points to it, or project skills named like a shared skill.
+2. `scripts/new-project.sh <project> "<name>"` adds the missing template files, such as `docs/progress.md`. Existing files are never overwritten.
+3. Remove from the project's files what the global rules now say, and keep only what is specific to the project: document routing, commands, the project's own specifications and agents. Project agents should hold only project-specific rules; the general rules for subagents are in `task-worker`. You can ask the assistant to do this step: have it list what it would remove first, then confirm.
+4. If the project is developed in cloud sessions, run `scripts/enable-cloud.sh <project>` too (see [Cloud sessions](#cloud-sessions-claude-code-on-the-web)).
 
 ### On another computer
 

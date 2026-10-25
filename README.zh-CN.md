@@ -146,7 +146,7 @@ scripts/install.sh
 scripts/sync-profile.sh push    # 如果个人设置放在私有仓库里
 ```
 
-`scripts/install.sh --configure` 可以一次完成前两步。
+`scripts/install.sh --configure` 可以一次完成前两步。如果有项目为云端会话复制过你的设置（`enable-cloud.sh --with-profile`），要对那个项目再运行一次这个命令，更新副本。
 
 ### 添加或修改你自己的规则
 
@@ -201,7 +201,14 @@ git add -A && git commit -m "…" && git push
 
 ### 更新某个项目
 
-项目自己的规则放在项目里：直接编辑项目的 `AGENTS.md`、`docs/AI_RULES.md` 和 `docs/progress.md`，随项目一起提交，agent-kit 不用改。`scripts/check-projects.sh` 会列出缺少这些文件的项目。
+项目自己的规则放在项目里：直接编辑项目的 `AGENTS.md`、`docs/AI_RULES.md` 和 `docs/progress.md`，随项目一起提交，agent-kit 不用改。
+
+把已有项目接入 agent-kit（可选，全局规则本来就对它生效）：
+
+1. `scripts/check-projects.sh <项目>`：列出缺少的内容，包括 `AGENTS.md`、指向它的 `CLAUDE.md`，以及和通用技能重名的项目技能。
+2. `scripts/new-project.sh <项目> "<名称>"`：补上缺少的模板文件，例如 `docs/progress.md`。已有的文件不会被覆盖。
+3. 把项目文件里和全局规则重复的内容删掉，只留项目特有的：文档路由、命令、项目自己的规格和 agent。项目里的 agent 只写项目特有的规则，子线程的通用规则在 `task-worker` 里。这一步可以交给助手做：让它先列出打算删掉的内容，你确认后再动手。
+4. 如果这个项目在云端会话里开发，再运行 `scripts/enable-cloud.sh <项目>`（见[云端会话](#云端会话网页版-claude-code)）。
 
 ### 在另一台电脑上
 
