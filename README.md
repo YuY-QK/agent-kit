@@ -51,7 +51,7 @@ There are three layers, from most general to most specific:
 | Layer | What it is | Where it comes from |
 |---|---|---|
 | **Global rules** | How the assistant works with you in every project: language, planning, engineering habits, verification, git | Assembled from `rules/` using your profile, installed as `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` |
-| **Shared skills** | Reusable workflows (planning a new app, reviewing changes, testing…) plus stack skills (Flutter, single-file web) | `skills/` and `stacks/<stack>/skills/`, installed into `~/.claude/skills/` and `~/.agents/skills/` |
+| **Shared skills** | Reusable workflows (planning a new app, reviewing changes, testing, running subagents…) plus stack skills (Flutter, single-file web) | `skills/` and `stacks/<stack>/skills/`, installed into `~/.claude/skills/` and `~/.agents/skills/`; subagents into `~/.claude/agents/` |
 | **Project layer** | What is specific to one project: commands, architecture, conventions | Each project's own `AGENTS.md` (and a `CLAUDE.md` that points to it), started from `templates/project/` |
 
 And three places for your data:
@@ -129,7 +129,7 @@ Before installing, `install.sh` checks every target location and prints a plan:
 | new | Nothing there yet | Installed |
 | update | Installed by agent-kit before, or the same content | Replaced with the new version |
 | up to date | Already the current version | Nothing |
-| conflict | Content agent-kit didn't install (your own `CLAUDE.md`, a skill with the same name…) | You decide |
+| conflict | Content agent-kit didn't install (your own `CLAUDE.md`, a skill or subagent with the same name…) | You decide |
 | outdated override | You merged this file earlier, and agent-kit's version has changed since | You decide whether to keep your merge |
 | other source | A skill agent-kit didn't install and that has a different name, but may overlap | Kept unless you disable it |
 
@@ -158,11 +158,13 @@ The page runs only on `127.0.0.1`, needs a one-time token in its address, and cl
 The global rules say how to work; each project's `AGENTS.md` says what is specific to that project. Codex reads `AGENTS.md` directly; Claude Code reads `CLAUDE.md`, so the template's `CLAUDE.md` contains only `@AGENTS.md` and both tools read the same rules.
 
 ```bash
-scripts/new-project.sh ~/Code/my-app "My App"              # adds AGENTS.md, CLAUDE.md, docs/AI_RULES.md
+scripts/new-project.sh ~/Code/my-app "My App"              # adds AGENTS.md, CLAUDE.md, docs/AI_RULES.md, docs/progress.md
 scripts/new-project.sh ~/Code/my-app "My App" --lang zh-CN # template in another language
 scripts/check-projects.sh                                  # checks every project under PROJECT_DIRS
 scripts/check-projects.sh ~/Code/my-app                    # or specific projects
 ```
+
+`docs/progress.md` is the project's single progress summary (status, plan, open items); the global rules tell the assistant to read it first and keep it current, so a new session can continue without the old conversation.
 
 `new-project.sh` never overwrites existing files. Fill in the parts marked `{{...}}` afterwards. `check-projects.sh` only reports; it warns about a missing `AGENTS.md` or `CLAUDE.md`, and about project skills with the same name as a shared skill (both would load).
 
@@ -178,6 +180,7 @@ Shared skills:
 | `architecture-change` | Design or review cross-module architecture, data, networking, integrations, permissions and security boundaries |
 | `change-review` | Review code, test or documentation changes for correctness, data safety, architecture, privacy and regressions |
 | `quality-testing` | Design, write or review tests and regression scope |
+| `orchestrate` | Run work across subagents as the main thread: choose models by difficulty, decide how many run at once, merge their summaries, report once per stage |
 
 Stack skills:
 
@@ -185,6 +188,17 @@ Stack skills:
 |---|---|---|
 | `flutter` | `flutter-development` | Implement or refactor Flutter/Dart code (layering, Riverpod, local-first, localisation, FVM) |
 | `web` | `single-file-web` | Build single-file web pages that open directly in a browser: demos, clickable prototypes, small tools |
+
+`orchestrate` comes with two subagent briefs, installed for Claude Code as user-level agents in `~/.claude/agents/`:
+
+| Agent | Model | Does |
+|---|---|---|
+| `task-worker` | `sonnet` | Implements one bounded task, changes only its own files, runs the checks, commits without pushing, and returns a fixed-format summary |
+| `repo-scout` | `haiku` | Read-only lookups and inventories, answered with `path:line` evidence |
+
+The briefs live in `skills/orchestrate/agents/`, so tools without agent definitions (such as Codex) can read the same text. Put project-specific agents in the project's `.claude/agents/` under other names.
+
+`single-file-web` also includes `scripts/check-pages.cjs`, which checks pages without screenshots: it opens each page at desktop width (light) and 375px (dark) and reports console errors, horizontal scrolling, elements outside the viewport, truncated text, small tap targets and controls without a name, as text. `--each "<selector>"` re-checks after clicking each tab. It needs Playwright.
 
 Every skill has an English `SKILL.md` and a Chinese `SKILL.zh-CN.md`; the installer picks one according to `CONTENT_LANG`.
 
@@ -210,6 +224,7 @@ Run any script with `--help` for details.
 │   ├── profile.sh         preferences
 │   ├── rules/*.md         extra rules, appended in file-name order
 │   ├── skills/<name>/     your own skills, installed next to the shared ones
+│   ├── agents/<name>.md   your own subagents (Claude Code)
 │   └── overrides/         merge results from the conflict page
 ├── build/                 generated files; the installed links point here
 ├── state/                 what was copied (for --copy)
@@ -221,11 +236,14 @@ Run any script with `--help` for details.
 | Claude Code | `~/.claude/CLAUDE.md` | `~/.claude/skills/` |
 | Codex | `~/.codex/AGENTS.md` | `~/.agents/skills/` |
 
+Claude Code also gets the subagents in `~/.claude/agents/`.
+
 Set `AGENT_KIT_HOME` to use a folder other than `~/.config/agent-kit`, or `AGENT_KIT_PROFILE` to point at a profile folder for one run.
 
 ## Customizing further
 
 - **Add your own rules:** put Markdown files in `profile/rules/` (or use the extra-rules box on the settings page).
+- **Add your own subagents:** put them in `profile/agents/<name>.md`; they are installed into `~/.claude/agents/` and replace a shared agent with the same name.
 - **Add your own skills:** put them in `profile/skills/<name>/SKILL.md`. A personal skill with the same name as a shared one replaces it.
 - **Change a shared skill or the generated rules for yourself:** edit the merge result in `profile/overrides/`, or resolve it on the conflict page.
 - **Change agent-kit for everyone:** fork it. Rules are assembled from small fragments in `rules/<lang>/` in the order given by `rules/manifest`; `${KEY}` picks a fragment by a setting and `?KEY` includes a line only when the setting is not empty. Skills are plain folders under `skills/` and `stacks/<stack>/skills/`.

@@ -29,5 +29,6 @@ Produce a web page that runs completely from one HTML file, looks consistent wit
 ## Verification
 
 - Extract the pure logic and test it with Node: check every step's state and the final result for typical inputs and many random inputs.
-- Check in a browser at light, dark, phone width and desktop width; fix any console errors.
+- Check the page with `scripts/check-pages.cjs` in this skill folder instead of looking at screenshots: `node <skill-folder>/scripts/check-pages.cjs page.html` checks desktop width in light mode and 375px in dark mode, and reports console errors, horizontal scrolling, elements outside the viewport, truncated text, small tap targets and controls without a name, in text. Add `--each "<selector>"` to also check the page after clicking each tab or similar control. It needs Playwright (`npm install --save-dev playwright`); if that isn't available, say so and check by hand.
+- Fix everything it reports, or explain why a finding is acceptable. Look at a screenshot only for a final visual check, when it matters.
 - Report which checks were done and which weren't.

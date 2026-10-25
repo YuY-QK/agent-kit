@@ -1,7 +1,8 @@
 # Order in which rule fragments are assembled into the global AGENTS.md.
 # Paths are relative to rules/<content-language>/.
 # ${VAR} is replaced with the profile value; a trailing "?VAR" includes the line
-# only when VAR is non-empty. Lines starting with # are comments.
+# only when VAR is non-empty (ORCHESTRATE is set by build.sh when the
+# orchestrate skill is selected). Lines starting with # are comments.
 core/00-intro.md
 core/05-language.md
 about/00-heading.md
@@ -13,9 +14,11 @@ planning/${PLANNING}.md
 core/10-priority.md
 core/20-reading.md
 core/30-workflow.md
+core/35-progress.md
 core/40-docs.md
 core/50-engineering.md
 core/60-verification.md
+core/65-delegation.md ?ORCHESTRATE
 core/70-git.md
 git/commits-${COMMITS}.md
 core/75-git-tail.md

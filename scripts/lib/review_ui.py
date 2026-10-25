@@ -401,7 +401,7 @@ PAGE_JS = r"""
 
   function toolName(i) { return i.tool === "claude" ? "Claude Code" : i.tool === "codex" ? "Codex" : (MSG.tool_profile || "profile"); }
   function toolLabel(i) { return esc(toolName(i)); }
-  function kindLabel(i) { return i.kind === "rules" ? T("kind_rules") : T("kind_skill"); }
+  function kindLabel(i) { return i.kind === "rules" ? T("kind_rules") : i.kind === "agent" ? T("kind_agent") : T("kind_skill"); }
   // conflict markers and headings use the plain (unescaped) labels
   function plainLeft(i) { return MSG[i.status === "outdated" ? "label_override" : "label_yours"] || "left"; }
   function plainRight(i) { return MSG[i.status === "outdated" ? "label_new" : "label_kit"] || "right"; }

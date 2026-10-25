@@ -131,7 +131,8 @@ M1 should get the core loop running as early as possible, even with a rough UI, 
 
 1. Put an `AGENTS.md` at the project root, generated with agent-kit's `scripts/new-project.sh` (the template holds only the collaboration framework, no business rules); if agent-kit isn't installed, ask the user first. Fill in only the file paths in “Document routing”, the skill names and the project commands.
 2. Add a `CLAUDE.md` containing the single line `@AGENTS.md`, so Claude Code and Codex read the same rules.
-3. List the M0 kickoff checklist and ask the user which item to start with.
+3. Fill in `docs/progress.md` (also from the template): the milestones from the development plan as the plan, “nothing built yet” as the status. It is the only progress summary; update it after each milestone.
+4. List the M0 kickoff checklist and ask the user which item to start with.
 
 ## Light mode
 

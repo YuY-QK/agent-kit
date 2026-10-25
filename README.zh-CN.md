@@ -51,7 +51,7 @@ git clone https://github.com/YuY-QK/agent-kit.git ~/agent-kit
 | 层 | 是什么 | 从哪来 |
 |---|---|---|
 | **全局规则** | 助手在所有项目里怎么和你协作：语言、规划、工程习惯、验证、git | 用你的个人设置从 `rules/` 拼装，安装为 `~/.claude/CLAUDE.md` 和 `~/.codex/AGENTS.md` |
-| **通用技能** | 可复用的工作流程（规划新应用、审查改动、测试等），以及技术栈技能（Flutter、单文件网页） | `skills/` 和 `stacks/<技术栈>/skills/`，安装到 `~/.claude/skills/` 和 `~/.agents/skills/` |
+| **通用技能** | 可复用的工作流程（规划新应用、审查改动、测试、调度子线程等），以及技术栈技能（Flutter、单文件网页） | `skills/` 和 `stacks/<技术栈>/skills/`，安装到 `~/.claude/skills/` 和 `~/.agents/skills/`；子线程安装到 `~/.claude/agents/` |
 | **项目层** | 某个项目特有的内容：命令、架构、约定 | 每个项目自己的 `AGENTS.md`（以及指向它的 `CLAUDE.md`），用 `templates/project/` 起步 |
 
 你的数据放在三个地方：
@@ -129,7 +129,7 @@ scripts/sync-profile.sh status  # 个人设置在哪、有没有没推送的改�
 | 新增 | 那里还没有内容 | 直接安装 |
 | 更新 | 之前由 agent-kit 安装，或内容相同 | 替换为新版本 |
 | 已是最新 | 已经是当前版本 | 不处理 |
-| 冲突 | 不是 agent-kit 装的内容（你自己的 `CLAUDE.md`、同名技能等） | 由你决定 |
+| 冲突 | 不是 agent-kit 装的内容（你自己的 `CLAUDE.md`、同名的技能或子线程等） | 由你决定 |
 | 覆盖已过期 | 你之前合并过这个文件，之后 agent-kit 的版本又变了 | 由你决定是否保留之前的合并 |
 | 其他来源 | 不是 agent-kit 装的、名字也不同，但功能可能重叠的技能 | 默认保留，可以停用 |
 
@@ -158,11 +158,13 @@ scripts/sync-profile.sh status  # 个人设置在哪、有没有没推送的改�
 全局规则说明怎么工作，每个项目的 `AGENTS.md` 说明这个项目特有的东西。Codex 直接读 `AGENTS.md`；Claude Code 读 `CLAUDE.md`，所以模板里的 `CLAUDE.md` 只有一行 `@AGENTS.md`，两个工具读的是同一份规则。
 
 ```bash
-scripts/new-project.sh ~/Code/my-app "My App"              # 添加 AGENTS.md、CLAUDE.md、docs/AI_RULES.md
+scripts/new-project.sh ~/Code/my-app "My App"              # 添加 AGENTS.md、CLAUDE.md、docs/AI_RULES.md、docs/progress.md
 scripts/new-project.sh ~/Code/my-app "我的应用" --lang zh-CN # 使用中文模板
 scripts/check-projects.sh                                  # 检查 PROJECT_DIRS 下的所有项目
 scripts/check-projects.sh ~/Code/my-app                    # 或者只检查指定项目
 ```
+
+`docs/progress.md` 是项目唯一的进度摘要（现状、计划、待办）；全局规则要求助手先读它、并随时保持更新，这样新会话不用回看旧对话也能接着做。
 
 `new-project.sh` 不会覆盖已有文件，之后把标着 `{{...}}` 的部分填好。`check-projects.sh` 只报告、不修改：缺少 `AGENTS.md` 或 `CLAUDE.md` 会提示，项目里有和通用技能同名的技能也会提示（两个都会被加载）。
 
@@ -178,6 +180,7 @@ scripts/check-projects.sh ~/Code/my-app                    # 或者只检查指�
 | `architecture-change` | 设计或审查跨模块架构、数据、网络、集成、权限和安全边界 |
 | `change-review` | 审查代码、测试或文档改动的正确性、数据安全、架构、隐私和回归问题 |
 | `quality-testing` | 设计、编写或审查测试和回归范围 |
+| `orchestrate` | 作为主线程调度子线程：按难度选模型、决定同时开几个、合并子线程的总结、每个阶段汇报一次 |
 
 技术栈技能：
 
@@ -185,6 +188,17 @@ scripts/check-projects.sh ~/Code/my-app                    # 或者只检查指�
 |---|---|---|
 | `flutter` | `flutter-development` | 按分层、Riverpod、本地优先、本地化和 FVM 规则实现或重构 Flutter/Dart 代码 |
 | `web` | `single-file-web` | 制作无需构建、直接用浏览器打开的单文件网页：演示、可点击原型、小工具 |
+
+`orchestrate` 附带两个子线程说明，给 Claude Code 安装为用户级 agent（`~/.claude/agents/`）：
+
+| Agent | 模型 | 作用 |
+|---|---|---|
+| `task-worker` | `sonnet` | 完成一个边界清楚的任务：只改自己的文件、跑检查、只 commit 不 push，交回固定格式的总结 |
+| `repo-scout` | `haiku` | 只读的查找和盘点，回答附 `路径:行号` 依据 |
+
+说明文件放在 `skills/orchestrate/agents/`，没有 agent 定义的工具（例如 Codex）也能读到同一份内容。项目专属的 agent 放在项目的 `.claude/agents/`，用不同的名字。
+
+`single-file-web` 还带了 `scripts/check-pages.cjs`，不看截图也能检查页面：在桌面宽度浅色、375px 深色下打开每个页面，用文字报告控制台报错、横向滚动、元素超出屏幕、文字截断、点击区域太小和控件缺少名称。`--each "<选择器>"` 会逐个点击标签页后再检查。需要 Playwright。
 
 每个技能都有英文 `SKILL.md` 和中文 `SKILL.zh-CN.md`，安装时按 `CONTENT_LANG` 选用。
 
@@ -210,6 +224,7 @@ scripts/check-projects.sh ~/Code/my-app                    # 或者只检查指�
 │   ├── profile.sh         偏好
 │   ├── rules/*.md         额外规则，按文件名顺序追加
 │   ├── skills/<名称>/     你自己的技能，和通用技能一起安装
+│   ├── agents/<名称>.md   你自己的子线程（Claude Code）
 │   └── overrides/         冲突页面里的合并结果
 ├── build/                 生成的文件，安装的链接指向这里
 ├── state/                 复制安装的记录（--copy）
@@ -221,11 +236,14 @@ scripts/check-projects.sh ~/Code/my-app                    # 或者只检查指�
 | Claude Code | `~/.claude/CLAUDE.md` | `~/.claude/skills/` |
 | Codex | `~/.codex/AGENTS.md` | `~/.agents/skills/` |
 
+Claude Code 还会在 `~/.claude/agents/` 里安装子线程。
+
 设置 `AGENT_KIT_HOME` 可以改用 `~/.config/agent-kit` 以外的目录；`AGENT_KIT_PROFILE` 可以在单次运行时指定个人设置目录。
 
 ## 进一步定制
 
 - **添加自己的规则**：把 Markdown 文件放进 `profile/rules/`（或者用设置页面上的「额外规则」）。
+- **添加自己的子线程**：放在 `profile/agents/<名称>.md`，会安装到 `~/.claude/agents/`，并替换同名的通用 agent。
 - **添加自己的技能**：放在 `profile/skills/<名称>/SKILL.md`。和通用技能同名的个人技能会替换通用技能。
 - **只为自己修改通用技能或生成的规则**：编辑 `profile/overrides/` 里的合并结果，或者在冲突页面里处理。
 - **为所有人修改 agent-kit**：fork 本仓库。规则由 `rules/<语言>/` 下的小片段按 `rules/manifest` 的顺序拼装：`${KEY}` 按设置选择片段，`?KEY` 表示设置不为空时才包含这一行。技能就是 `skills/` 和 `stacks/<技术栈>/skills/` 下的普通文件夹。

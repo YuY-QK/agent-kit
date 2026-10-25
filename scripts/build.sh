@@ -70,6 +70,8 @@ build_rules() {
   AK_STACKS_TEXT="$(stacks_text)"
   AK_SCAFFOLD="$SCAFFOLD"
   export AK_REPLY_LANGUAGE AK_DOCS_LANGUAGE AK_STACKS_TEXT AK_SCAFFOLD
+  # conditions computed from the selection (used as ?NAME in rules/manifest)
+  ORCHESTRATE="$(selected_skills | awk -F'\t' '$1 == "orchestrate" { print 1; exit }')"
 
   while IFS= read -r entry || [ -n "$entry" ]; do
     case "$entry" in ''|'#'*) continue ;; esac
@@ -174,6 +176,40 @@ build_all() {
     done
     printf '%s\tkit\t%s\n' "$name" "$dir" >> "$BUILD_DIR/skills.tsv"
   done
+
+  # subagent briefs shipped inside shared skills (skills/<name>/agents/<agent>.md),
+  # installed as user-level agents for tools that support them
+  mkdir -p "$gen/agents" "$BUILD_DIR/agents"
+  : > "$BUILD_DIR/agents.tsv"
+  selected_skills | while IFS="$(printf '\t')" read -r name dir; do
+    [ -d "$dir/agents" ] || continue
+    for f in "$dir"/agents/*.md; do
+      [ -f "$f" ] || continue
+      agent="$(basename "$f" .md)"
+      case "$agent" in *.*) continue ;; esac   # language variants such as x.zh-CN.md
+      variant="$dir/agents/$agent.$CONTENT_LANG.md"
+      [ -f "$variant" ] || variant="$f"
+      cp "$variant" "$gen/agents/$agent.md"
+      if [ -f "$PROFILE_DIR/overrides/agents/$agent.md" ]; then
+        cp "$PROFILE_DIR/overrides/agents/$agent.md" "$BUILD_DIR/agents/$agent.md"
+      else
+        ln -s "$variant" "$BUILD_DIR/agents/$agent.md"
+      fi
+      printf '%s\tkit\t%s\n' "$agent" "$name" >> "$BUILD_DIR/agents.tsv"
+    done
+  done
+  # your own agents from the profile (profile/agents/<name>.md) win over shared ones
+  if [ -d "$PROFILE_DIR/agents" ]; then
+    for f in "$PROFILE_DIR"/agents/*.md; do
+      [ -f "$f" ] || continue
+      agent="$(basename "$f" .md)"
+      rm -f "$BUILD_DIR/agents/$agent.md" "$gen/agents/$agent.md"
+      ln -s "$f" "$BUILD_DIR/agents/$agent.md"
+      awk -F'\t' -v n="$agent" '$1 != n' "$BUILD_DIR/agents.tsv" > "$BUILD_DIR/agents.tsv.tmp"
+      mv "$BUILD_DIR/agents.tsv.tmp" "$BUILD_DIR/agents.tsv"
+      printf '%s\tprofile\t-\n' "$agent" >> "$BUILD_DIR/agents.tsv"
+    done
+  fi
 
   # your own skills from the profile; they win over a shared skill with the same name
   if [ -d "$PROFILE_DIR/skills" ]; then

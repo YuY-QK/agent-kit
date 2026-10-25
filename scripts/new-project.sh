@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Add agent-kit's project template to a project: AGENTS.md, CLAUDE.md, docs/AI_RULES.md.
+# Add agent-kit's project template to a project: AGENTS.md, CLAUDE.md, docs/AI_RULES.md, docs/progress.md.
 # Existing files are never overwritten. The template language follows CONTENT_LANG
 # in your profile; pass --lang to choose another one.
 #

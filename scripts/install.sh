@@ -193,6 +193,13 @@ skills_path() {
     codex) printf '%s' "$HOME/.agents/skills" ;;
   esac
 }
+agents_path() {
+  # only Claude Code reads user-level agent definitions
+  case "$1" in
+    claude) printf '%s' "$HOME/.claude/agents" ;;
+    *) printf '' ;;
+  esac
+}
 main_file() {
   if [ -d "$1" ]; then printf '%s' "$1/SKILL.md"; else printf '%s' "$1"; fi
 }
@@ -238,6 +245,11 @@ add_plan() {
   printf '0\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$@" >> "$PLAN"
 }
 
+built_agents() {
+  [ -f "$BUILD_DIR/agents.tsv" ] && cat "$BUILD_DIR/agents.tsv"
+  return 0
+}
+
 built_skills() {
   [ -f "$BUILD_DIR/skills.tsv" ] && cat "$BUILD_DIR/skills.tsv"
   return 0
@@ -263,6 +275,19 @@ build_plan() {
         "$(classify "$BUILD_DIR/skills/$name" "$dest")" \
         "$left" "$BUILD_DIR/skills/$name/SKILL.md" "$target" "$base"
     done
+    ad="$(agents_path "$tool")"
+    if [ -n "$ad" ]; then
+      built_agents | while IFS="$(printf '\t')" read -r name origin skill; do
+        dest="$ad/$name.md"
+        left="-"; [ -e "$dest" ] && left="$dest"
+        target="$PROFILE_DIR/overrides/agents/$name.md"
+        base="$(hash_file "$gen/agents/$name.md")"
+        [ "$origin" = "profile" ] && { target="-"; base="-"; }
+        add_plan agent "$tool" "$name" "$BUILD_DIR/agents/$name.md" "$dest" \
+          "$(classify "$BUILD_DIR/agents/$name.md" "$dest")" \
+          "$left" "$BUILD_DIR/agents/$name.md" "$target" "$base"
+      done
+    fi
     # other skills in the folder that agent-kit didn't install and that don't share a name
     if [ -d "$sd" ]; then
       for entry in "$sd"/*; do
@@ -302,6 +327,21 @@ build_plan() {
         [ "$DRY_RUN" -eq 1 ] || printf '%s\n' "$cur" > "$f.base"
       elif [ "$base" != "$cur" ]; then
         add_plan skill profile "$name" "$g" "$f" outdated "$f" "$g" "$f" "$cur"
+      fi
+    done
+  fi
+  if [ -d "$ov/agents" ]; then
+    for f in "$ov"/agents/*.md; do
+      [ -f "$f" ] || continue
+      name="$(basename "$f" .md)"
+      g="$gen/agents/$name.md"
+      [ -f "$g" ] || continue
+      cur="$(hash_file "$g")"
+      base="$(cat "$f.base" 2>/dev/null || true)"
+      if [ -z "$base" ]; then
+        [ "$DRY_RUN" -eq 1 ] || printf '%s\n' "$cur" > "$f.base"
+      elif [ "$base" != "$cur" ]; then
+        add_plan agent profile "$name" "$g" "$f" outdated "$f" "$g" "$f" "$cur"
       fi
     done
   fi
@@ -432,12 +472,38 @@ prune_stale() {
   done
 }
 
+# Remove agent files we installed that are no longer selected.
+prune_agents() {
+  dir="$1"
+  [ -d "$dir" ] || return 0
+  for entry in "$dir"/*.md; do
+    [ -e "$entry" ] || [ -L "$entry" ] || continue
+    name="$(basename "$entry" .md)"
+    if awk -F'\t' -v n="$name" '$1 == n { f = 1 } END { exit !f }' "$BUILD_DIR/agents.tsv" 2>/dev/null; then
+      [ -e "$entry" ] && continue
+    fi
+    if points_to_us "$entry"; then
+      say removed_stale "$(pretty "$entry")"; run rm "$entry"
+    elif recorded_copy "$entry"; then
+      say removed_stale "$(pretty "$entry")"; run rm "$entry"; forget_copy "$entry"
+    fi
+  done
+}
+
 uninstall_all() {
   for tool in claude codex; do
     rd="$(rules_path "$tool")"; sd="$(skills_path "$tool")"
     printf '== %s\n' "$tool"
     if points_to_us "$rd" || recorded_copy "$rd"; then
       say removed "$(pretty "$rd")"; run rm "$rd"; forget_copy "$rd"
+    fi
+    ad="$(agents_path "$tool")"
+    if [ -n "$ad" ] && [ -d "$ad" ]; then
+      for entry in "$ad"/*.md; do
+        if points_to_us "$entry" || recorded_copy "$entry"; then
+          say removed "$(pretty "$entry")"; run rm "$entry"; forget_copy "$entry"
+        fi
+      done
     fi
     [ -d "$sd" ] || continue
     for entry in "$sd"/*; do
@@ -495,6 +561,8 @@ apply_plan() {
   for tool in $TOOLS; do
     d="$(skills_path "$tool")"
     [ -n "$d" ] && prune_stale "$d"
+    d="$(agents_path "$tool")"
+    [ -n "$d" ] && prune_agents "$d"
   done
   return 0
 }
