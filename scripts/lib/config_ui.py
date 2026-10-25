@@ -242,7 +242,38 @@ class Config(ui_common.App):
         elif os.path.isfile(custom):
             os.remove(custom)
 
+    def browse(self, raw):
+        """List the sub-folders of a folder, for the folder picker. Names only; no file contents."""
+        path = os.path.expanduser((raw or "").strip() or self.home)
+        path = os.path.realpath(path)
+        while path != os.path.dirname(path) and not os.path.isdir(path):
+            path = os.path.dirname(path)
+        names, truncated = [], False
+        try:
+            entries = sorted(os.listdir(path), key=lambda n: n.lower())
+        except OSError:
+            entries = []
+        for n in entries:
+            if n.startswith("."):
+                continue
+            if os.path.isdir(os.path.join(path, n)):
+                if len(names) >= 500:
+                    truncated = True
+                    break
+                names.append(n)
+        parent = os.path.dirname(path)
+        return {
+            "path": path,
+            "shown": ui_common.pretty(path, self.home),
+            "parent": parent if parent != path else "",
+            "home": self.home,
+            "dirs": names,
+            "truncated": truncated,
+        }
+
     def handle(self, path, payload):
+        if path == "/browse":
+            return True, self.browse(payload.get("path")), False
         try:
             v = self.validate(payload.get("settings") or {})
         except ValueError as exc:
@@ -283,6 +314,18 @@ select, input[type=text] { padding: 7px 10px; font-size: 14px; width: 100%; max-
 .dir .warn { color: var(--warn); font-size: 12px; white-space: nowrap; }
 .small { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 7px; padding: 5px 10px; font: inherit; font-size: 13px; cursor: pointer; }
 .small.ghost { border-color: transparent; color: var(--accent); }
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+.modal { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; width: min(560px, 100%); max-height: min(640px, 100%); display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+.modal h3 { margin: 0; padding: 14px 18px 4px; font-size: 16px; }
+.modal .bar { display: flex; gap: 8px; align-items: center; padding: 8px 18px; }
+.modal .bar input { flex: 1; max-width: none; font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+.modal .list { flex: 1; overflow: auto; margin: 0 18px; border: 1px solid var(--line); border-radius: 8px; min-height: 160px; }
+.modal .list button { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); padding: 8px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+.modal .list button:last-child { border-bottom: 0; }
+.modal .list button:hover, .modal .list button:focus-visible { background: color-mix(in srgb, var(--accent) 10%, transparent); outline: none; }
+.modal .list .none { padding: 14px 12px; color: var(--muted); font-size: 13px; }
+.modal .foot { display: flex; gap: 8px; justify-content: flex-end; align-items: center; padding: 12px 18px 16px; flex-wrap: wrap; }
+.modal .foot .cur { flex: 1; min-width: 0; font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, Menlo, monospace; }
 textarea.rules { width: 100%; min-height: 140px; padding: 10px; font-family: ui-monospace, Menlo, monospace; font-size: 13px; line-height: 1.5; resize: vertical; }
 .skills { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 8px; padding-left: 4px; }
 .skills .choice code { font-size: 13px; }
@@ -391,6 +434,7 @@ PAGE_JS = r"""
       var info = dirState.filter(function (x) { return x.path === d.replace(/\/+$/, ""); })[0];
       return '<div class="dir"><input type="text" data-dir="' + k + '" value="' + esc(d) + '" placeholder="~/Work/Projects">' +
         (info && !info.exists ? '<span class="warn">' + T("cfg_dir_missing") + "</span>" : "") +
+        '<button type="button" class="small" data-choose="' + k + '">' + T("cfg_choose") + "</button>" +
         '<button type="button" class="small ghost" data-rmdir="' + k + '">' + T("cfg_remove") + "</button></div>";
     }).join("");
     h += '<section><div class="sec-head"><h2>' + T("cfg_sec_machine") + "</h2><p>" + T("cfg_machine_hint") + "</p></div>" +
@@ -481,9 +525,59 @@ PAGE_JS = r"""
       setTimeout(function () { var a = document.activeElement; if (!a || !a.dataset || a.dataset.dir === undefined) render(); }, 150);
     }
   });
+  // ---- folder picker ----
+  var picker = null;
+  function closePicker() {
+    var m = document.getElementById("picker"); if (m) m.remove();
+    picker = null;
+  }
+  function openPicker(k) {
+    picker = { k: k, path: "", shown: "", parent: "", dirs: [], truncated: false };
+    loadPicker(st.DIRS[k] || "");
+  }
+  function loadPicker(path) {
+    post("/browse", { path: path }).then(function (r) {
+      if (!picker) return;
+      if (r.ok) {
+        picker.path = r.body.path; picker.shown = r.body.shown; picker.parent = r.body.parent;
+        picker.home = r.body.home; picker.dirs = r.body.dirs; picker.truncated = r.body.truncated;
+      }
+      drawPicker();
+    });
+  }
+  function drawPicker() {
+    var m = document.getElementById("picker");
+    if (!m) { m = document.createElement("div"); m.id = "picker"; m.className = "modal-bg"; document.body.appendChild(m); }
+    var list = picker.dirs.length ? picker.dirs.map(function (n) {
+      return '<button type="button" data-go="' + esc(n) + '">📁 ' + esc(n) + "</button>";
+    }).join("") + (picker.truncated ? '<div class="none">…</div>' : "") : '<div class="none">' + T("cfg_browse_empty") + "</div>";
+    m.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-label="' + esc(T("cfg_browse_title")) + '">' +
+      "<h3>" + T("cfg_browse_title") + "</h3>" +
+      '<div class="bar"><button type="button" class="small" data-up="1"' + (picker.parent ? "" : " disabled") + ">" + T("cfg_browse_up") + "</button>" +
+      '<button type="button" class="small" data-home="1">' + T("cfg_browse_home") + "</button>" +
+      '<input type="text" id="picker-path" value="' + esc(picker.shown) + '" aria-label="' + esc(T("cfg_browse_path")) + '"></div>' +
+      '<div class="list">' + list + "</div>" +
+      '<div class="foot"><span class="cur" title="' + esc(picker.path) + '">' + esc(picker.shown) + "</span>" +
+      '<button type="button" class="small" data-pcancel="1">' + T("cancel") + "</button>" +
+      '<button type="button" class="btn primary" data-puse="1">' + T("cfg_browse_use") + "</button></div></div>";
+  }
+  document.addEventListener("keydown", function (e) {
+    if (!picker) return;
+    if (e.key === "Escape") { closePicker(); return; }
+    if (e.key === "Enter" && e.target.id === "picker-path") { e.preventDefault(); loadPicker(e.target.value); }
+  });
   document.addEventListener("click", function (e) {
     var t = e.target.closest("button");
+    if (picker && e.target.classList && e.target.classList.contains("modal-bg")) { closePicker(); return; }
     if (!t) return;
+    if (t.dataset.choose !== undefined) { return openPicker(+t.dataset.choose); }
+    if (t.dataset.go !== undefined) { return loadPicker(picker.path.replace(/\/+$/, "") + "/" + t.dataset.go); }
+    if (t.dataset.up) { return loadPicker(picker.parent); }
+    if (t.dataset.home) { return loadPicker(picker.home); }
+    if (t.dataset.pcancel) { return closePicker(); }
+    if (t.dataset.puse) {
+      st.DIRS[picker.k] = picker.shown; closePicker(); render(); return refresh();
+    }
     if (t.id === "theme") return toggleTheme();
     if (t.id === "add-dir") { st.DIRS.push(""); render(); var ins = document.querySelectorAll("[data-dir]"); if (ins.length) ins[ins.length - 1].focus(); return; }
     if (t.dataset.rmdir !== undefined) { st.DIRS.splice(+t.dataset.rmdir, 1); if (!st.DIRS.length) st.DIRS.push(""); render(); return refresh(); }

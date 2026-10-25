@@ -86,7 +86,7 @@ Run `scripts/configure.sh --web` (or `scripts/install.sh --configure`) to change
 | `TOOLS` | `claude`, `codex` | both | Which assistants to install for |
 | `PROJECT_DIRS` | folders, separated by `:` | empty | Optional machine setting: the parent folder(s) that contain your projects (not a single project), used only by `check-projects.sh` |
 
-The extra-rules box on the settings page writes to `rules/custom.md` in your profile; it is added to the end of the global rules.
+In the settings page each project folder can be typed or picked with the Choose button (a folder browser). The extra-rules box on the settings page writes to `rules/custom.md` in your profile; it is added to the end of the global rules.
 
 The settings are saved as two small shell-style files; see [`examples/profile.sh`](examples/profile.sh) and [`examples/machine.sh`](examples/machine.sh). They are read as plain `KEY="value"` lines and never executed, so it is safe to edit them by hand.
 

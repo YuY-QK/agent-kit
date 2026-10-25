@@ -86,7 +86,7 @@ git clone https://github.com/YuY-QK/agent-kit.git ~/agent-kit
 | `TOOLS` | `claude`、`codex` | 两个都装 | 给哪些助手安装 |
 | `PROJECT_DIRS` | 目录，用 `:` 分隔 | 空 | 可选的本机设置：存放各个项目的上一级文件夹（不是某个具体项目），只有 `check-projects.sh` 会用到 |
 
-设置页面上的「额外规则」会写入个人设置里的 `rules/custom.md`，追加在全局规则末尾。
+设置页面里每个项目文件夹既可以直接输入，也可以点「选择…」按钮在文件夹浏览器里选。「额外规则」会写入个人设置里的 `rules/custom.md`，追加在全局规则末尾。
 
 设置保存为两个很小的 shell 风格文件，格式见 [`examples/profile.sh`](examples/profile.sh) 和 [`examples/machine.sh`](examples/machine.sh)。它们只按 `KEY="value"` 逐行读取，不会被执行，手动编辑也是安全的。
 
