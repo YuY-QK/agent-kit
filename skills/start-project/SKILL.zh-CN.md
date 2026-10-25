@@ -38,6 +38,8 @@ description: 用 agent-kit 一步搭好新项目的 GitHub 仓库：项目模板
 
 都不行就停下，告诉用户连不上 agent-kit（通常是云端环境的网络设置）。
 
+**确认个人设置在这台机器上**：`copy` 和 `repo` 都要用到用户的个人设置。如果 `~/.config/agent-kit/profile/profile.sh` 不存在，或者这个目录不是用户自己的设置仓库（`git -C ~/.config/agent-kit/profile remote get-url origin` 没有输出），说明这里只有默认设置（常见于新的云端会话）。这时问用户的个人设置仓库地址；在云端会话里先用添加仓库的工具获得读权限，再运行 `<kit>/scripts/sync-profile.sh clone <地址>`（云端用那个工具给出的 https 地址） 和 `<kit>/scripts/install.sh --yes --no-web`。用户没有设置仓库时，告诉他 `copy` 只会复制默认设置，建议改用 `none`，以后在自己电脑上补上。
+
 ## 3. 获取仓库
 
 - **在用户自己的电脑上**（能用 SSH 连 GitHub）：让脚本来克隆，传入地址和 `--dir <本地目录>/<名称>`。

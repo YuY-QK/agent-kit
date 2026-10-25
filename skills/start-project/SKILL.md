@@ -38,6 +38,8 @@ Use the first that works:
 
 If none works, stop and tell the user agent-kit couldn't be reached (usually the network settings of a cloud environment).
 
+**Make sure the user's settings are on this machine**: `copy` and `repo` both use the user's profile. If `~/.config/agent-kit/profile/profile.sh` is missing, or that folder isn't the user's own profile repository (`git -C ~/.config/agent-kit/profile remote get-url origin` prints nothing), only the defaults are here (typical in a fresh cloud session). Ask for the user's profile repository; in a cloud session first get read access with the tool that adds a repository, then run `<kit>/scripts/sync-profile.sh clone <url>` (in the cloud, the https URL that tool gives) and `<kit>/scripts/install.sh --yes --no-web`. If the user has no profile repository, tell them `copy` would only copy the defaults and suggest `none` for now, to be filled in later from their own computer.
+
 ## 3. Get the repository
 
 - **On the user's computer** (SSH to GitHub works): let the script clone it, passing the address and `--dir <local folder>/<name>`.
