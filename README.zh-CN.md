@@ -84,7 +84,7 @@ git clone https://github.com/YuY-QK/agent-kit.git ~/agent-kit
 | `STACKS` | `flutter`、`web` | 全部 | 要安装的技术栈技能 |
 | `SKILLS` | `all` 或技能名列表 | `all` | 要安装的通用技能 |
 | `TOOLS` | `claude`、`codex` | 两个都装 | 给哪些助手安装 |
-| `PROJECT_DIRS` | 目录，用 `:` 分隔 | 空 | 本机设置：`check-projects.sh` 去哪里找项目 |
+| `PROJECT_DIRS` | 目录，用 `:` 分隔 | 空 | 可选的本机设置：存放各个项目的上一级文件夹（不是某个具体项目），只有 `check-projects.sh` 会用到 |
 
 设置页面上的「额外规则」会写入个人设置里的 `rules/custom.md`，追加在全局规则末尾。
 

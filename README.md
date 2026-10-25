@@ -84,7 +84,7 @@ Run `scripts/configure.sh --web` (or `scripts/install.sh --configure`) to change
 | `STACKS` | `flutter`, `web` | all | Stack skills to install |
 | `SKILLS` | `all` or a list of names | `all` | Shared skills to install |
 | `TOOLS` | `claude`, `codex` | both | Which assistants to install for |
-| `PROJECT_DIRS` | folders, separated by `:` | empty | Machine setting: where `check-projects.sh` looks for projects |
+| `PROJECT_DIRS` | folders, separated by `:` | empty | Optional machine setting: the parent folder(s) that contain your projects (not a single project), used only by `check-projects.sh` |
 
 The extra-rules box on the settings page writes to `rules/custom.md` in your profile; it is added to the end of the global rules.
 
