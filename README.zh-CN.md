@@ -17,6 +17,7 @@
 - [整体结构](#整体结构)
 - [设置项](#设置项)
 - [在多台电脑间同步个人设置](#在多台电脑间同步个人设置)
+- [更新](#更新)
 - [已有的规则和技能：冲突处理](#已有的规则和技能冲突处理)
 - [项目](#项目)
 - [包含的技能](#包含的技能)
@@ -33,6 +34,8 @@
 git clone https://github.com/YuY-QK/agent-kit.git ~/agent-kit
 ~/agent-kit/scripts/install.sh
 ```
+
+克隆到哪个目录都可以（用 SSH 的话是 `git@github.com:YuY-QK/agent-kit.git`）。仓库放在哪里不影响安装位置：规则和技能总是装到 `~/.claude/`、`~/.codex/` 和 `~/.agents/`，也就是助手读取的地方。但要放在一个长期不动的位置，因为安装的技能是指向这个文件夹的链接，见[移动 agent-kit 文件夹](#移动-agent-kit-文件夹)。
 
 第一次运行会问你在网页里还是在终端里回答设置问题，然后列出将要安装的内容。以后拉取了新版本或者改了设置，再运行一次 `install.sh` 就行，它只处理有变化的部分。
 
@@ -119,6 +122,105 @@ scripts/sync-profile.sh status  # 个人设置在哪、有没有没推送的改�
 个人设置有未推送的改动时，`install.sh` 会提醒你。个人设置里不包含任何本机路径，所以每台电脑上都一样。
 
 也可以把个人设置放在别的地方，比如已经在同步的文件夹：`install.sh --profile ~/Dropbox/agent-profile`。
+
+## 更新
+
+不管改了什么，最后一步都一样：在 agent-kit 目录里运行 `scripts/install.sh`。它会根据仓库和你的个人设置重新生成规则和技能，列出计划，只处理有变化的部分。下面的 `agent-kit/` 指你克隆的那个目录。
+
+### 更新到最新的 agent-kit
+
+```bash
+cd agent-kit
+git pull
+scripts/install.sh
+```
+
+新版本新增的设置问题只会问一次，其他回答保持不变。如果 agent-kit 改了你之前合并过的文件，会显示为「覆盖已过期」，你可以对照新版本重新检查。
+
+### 修改设置
+
+```bash
+scripts/configure.sh --web      # 或者在终端里用 scripts/configure.sh
+scripts/install.sh
+scripts/sync-profile.sh push    # 如果个人设置放在私有仓库里
+```
+
+`scripts/install.sh --configure` 可以一次完成前两步。
+
+### 添加或修改你自己的规则
+
+只适用于你自己的规则放在个人设置里，不要改 agent-kit：
+
+- **几行规则**：写在设置页面的「额外规则」里（保存为 `profile/rules/custom.md`）。
+- **更多规则**：在 `~/.config/agent-kit/profile/rules/` 里添加 Markdown 文件，按文件名顺序追加到全局规则末尾。
+- **你自己的技能或子线程**：`profile/skills/<名称>/SKILL.md` 和 `profile/agents/<名称>.md`。
+
+然后运行 `scripts/install.sh`，再用 `scripts/sync-profile.sh push` 同步到其他电脑。想先看结果：`scripts/build.sh --rules` 会输出生成的全局规则，不安装任何东西。
+
+### 只为自己修改通用规则或技能
+
+不要直接改安装好的文件（`~/.claude/CLAUDE.md`、`~/.claude/skills/…`）。它们都是链接：全局规则每次安装都会重新生成，在那里改的内容会丢失；技能的 `SKILL.md` 直接链接到 agent-kit 仓库里的文件，改它就等于改了仓库本身。
+
+应该在个人设置里做一份覆盖。把生成的文件复制过去，改这份副本，再安装：
+
+```bash
+cd ~/.config/agent-kit
+# 全局规则
+mkdir -p profile/overrides
+cp build/generated/AGENTS.md profile/overrides/AGENTS.md
+# 或者某个技能，例如 idea-to-plan
+mkdir -p profile/overrides/skills/idea-to-plan
+cp build/generated/skills/idea-to-plan/SKILL.md profile/overrides/skills/idea-to-plan/SKILL.md
+```
+
+改好副本后，在 agent-kit 目录里运行 `scripts/install.sh`。覆盖会代替生成的文件安装，并随个人设置一起同步。以后 agent-kit 的版本有变化，这份覆盖会被标为「覆盖已过期」，你可以在冲突页面里把新版本合并进来。在冲突页面里做的合并也是这样保存的。
+
+### 修改 agent-kit 本身
+
+如果你维护自己的一份（fork 或者自己的仓库）：
+
+| 要改的内容 | 改哪里 |
+|---|---|
+| 全局规则 | `rules/en/` 和 `rules/zh-CN/` 里的片段；顺序在 `rules/manifest` |
+| 通用技能 | `skills/<名称>/SKILL.md` 和 `SKILL.zh-CN.md`（技术栈技能在 `stacks/<技术栈>/skills/`） |
+| 子线程 | `skills/orchestrate/agents/<名称>.md` 和 `<名称>.zh-CN.md` |
+| 项目模板 | `templates/project/en/` 和 `templates/project/zh-CN/` |
+
+中英文两份要同步改。然后：
+
+```bash
+scripts/build.sh --rules        # 预览生成的全局规则
+scripts/install.sh              # 安装到这台电脑
+git add -A && git commit -m "…" && git push
+```
+
+其他电脑上：`git pull`，再运行 `scripts/install.sh`。
+
+从某个项目里总结出来、只对那个项目有意义的规则，写在那个项目的 `AGENTS.md` 或 `docs/` 里，不放进 agent-kit。对所有项目都有用的规则才放这里，并且去掉项目里的具体路径和名称，或者改成占位符。
+
+### 更新某个项目
+
+项目自己的规则放在项目里：直接编辑项目的 `AGENTS.md`、`docs/AI_RULES.md` 和 `docs/progress.md`，随项目一起提交，agent-kit 不用改。`scripts/check-projects.sh` 会列出缺少这些文件的项目。
+
+### 在另一台电脑上
+
+```bash
+cd agent-kit
+git pull                        # 最新的 agent-kit
+scripts/sync-profile.sh pull    # 最新的个人设置
+scripts/install.sh
+```
+
+### 移动 agent-kit 文件夹
+
+移动之后全局规则仍然有效，但安装的技能和子线程是指向这个文件夹的链接，在重新安装前都会失效：
+
+```bash
+mv ~/agent-kit ~/Code/agent-kit
+~/Code/agent-kit/scripts/install.sh
+```
+
+个人设置和本机设置放在 `~/.config/agent-kit/`，不受影响。
 
 ## 已有的规则和技能：冲突处理
 

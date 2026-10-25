@@ -17,6 +17,7 @@ One set of rules and skills for AI coding assistants, shared across all your com
 - [How it fits together](#how-it-fits-together)
 - [Settings](#settings)
 - [Sync your profile between computers](#sync-your-profile-between-computers)
+- [Updating](#updating)
 - [Existing rules and skills: conflicts](#existing-rules-and-skills-conflicts)
 - [Projects](#projects)
 - [What's included](#whats-included)
@@ -33,6 +34,8 @@ One set of rules and skills for AI coding assistants, shared across all your com
 git clone https://github.com/YuY-QK/agent-kit.git ~/agent-kit
 ~/agent-kit/scripts/install.sh
 ```
+
+Clone it wherever you like (with SSH: `git@github.com:YuY-QK/agent-kit.git`). The folder's location doesn't matter: the rules and skills are always installed into `~/.claude/`, `~/.codex/` and `~/.agents/`, where the assistants look for them. Keep it somewhere permanent, though, because the installed skills are links into it; see [Moving the agent-kit folder](#moving-the-agent-kit-folder).
 
 The first run asks whether to answer the settings questions in a web page or in the terminal, then shows what it will install. Re-run `install.sh` whenever you pull a new version of agent-kit or change your settings; it only touches what changed.
 
@@ -119,6 +122,105 @@ scripts/sync-profile.sh status  # where the profile is and whether it has unpush
 `install.sh` reminds you when the profile has changes that aren't pushed yet. The profile never contains machine paths, so it is the same on every computer.
 
 You can also keep the profile somewhere else, such as a folder that is already synced: `install.sh --profile ~/Dropbox/agent-profile`.
+
+## Updating
+
+Every change ends the same way: run `scripts/install.sh` in the agent-kit folder. It rebuilds the rules and skills from the repository and your profile, shows the plan, and touches only what changed. Below, `agent-kit/` means the folder you cloned.
+
+### Get the latest agent-kit
+
+```bash
+cd agent-kit
+git pull
+scripts/install.sh
+```
+
+New settings questions added in a new version are asked once; your other answers are kept. If agent-kit changed a file you merged earlier, it shows up as an *outdated override* so you can review it against the new version.
+
+### Change your settings
+
+```bash
+scripts/configure.sh --web      # or scripts/configure.sh in the terminal
+scripts/install.sh
+scripts/sync-profile.sh push    # if your profile is in a private repository
+```
+
+`scripts/install.sh --configure` does the first two steps in one go.
+
+### Add or change your own rules
+
+Rules that apply only to you go in your profile, not in agent-kit:
+
+- **A few lines:** use the extra-rules box on the settings page (saved as `profile/rules/custom.md`).
+- **More:** add Markdown files to `~/.config/agent-kit/profile/rules/`; they are appended to the global rules in file-name order.
+- **Your own skills or subagents:** `profile/skills/<name>/SKILL.md` and `profile/agents/<name>.md`.
+
+Then run `scripts/install.sh`, and `scripts/sync-profile.sh push` to take them to your other computers. To check the result first: `scripts/build.sh --rules` prints the global rules without installing anything.
+
+### Change a shared rule or skill just for yourself
+
+Don't edit the installed files (`~/.claude/CLAUDE.md`, `~/.claude/skills/…`). They are links: the global rules are regenerated on every install, so changes there are lost, and a skill's `SKILL.md` links straight to the file in the agent-kit repository, so editing it changes the repository itself.
+
+Make an override in your profile instead. Copy the generated file there, edit the copy, and install:
+
+```bash
+cd ~/.config/agent-kit
+# global rules
+mkdir -p profile/overrides
+cp build/generated/AGENTS.md profile/overrides/AGENTS.md
+# or a skill, e.g. idea-to-plan
+mkdir -p profile/overrides/skills/idea-to-plan
+cp build/generated/skills/idea-to-plan/SKILL.md profile/overrides/skills/idea-to-plan/SKILL.md
+```
+
+Edit the copy, then run `scripts/install.sh` in the agent-kit folder. The override is installed in place of the generated file and syncs with your profile. When agent-kit's version changes later, the override is flagged as *outdated* and you can merge the new version in on the conflict page. Merges you make on the conflict page are saved the same way.
+
+### Change agent-kit itself
+
+If you maintain your own copy (a fork, or your own repository):
+
+| To change | Edit |
+|---|---|
+| Global rules | The fragments in `rules/en/` and `rules/zh-CN/`; their order is in `rules/manifest` |
+| A shared skill | `skills/<name>/SKILL.md` and `SKILL.zh-CN.md` (stack skills under `stacks/<stack>/skills/`) |
+| A subagent | `skills/orchestrate/agents/<name>.md` and `<name>.zh-CN.md` |
+| The project template | `templates/project/en/` and `templates/project/zh-CN/` |
+
+Keep both languages in step. Then:
+
+```bash
+scripts/build.sh --rules        # preview the generated global rules
+scripts/install.sh              # install on this computer
+git add -A && git commit -m "…" && git push
+```
+
+On your other computers: `git pull` and `scripts/install.sh`.
+
+Rules that come from one project and only make sense there belong in that project's `AGENTS.md` or `docs/`, not in agent-kit. Rules that would help in every project belong here, with project-specific paths and names left out or turned into placeholders.
+
+### Update a project
+
+A project's own rules live in the project: edit its `AGENTS.md`, `docs/AI_RULES.md` and `docs/progress.md` there and commit them with the project. Nothing in agent-kit needs to change. `scripts/check-projects.sh` reports projects that are missing these files.
+
+### On another computer
+
+```bash
+cd agent-kit
+git pull                        # the latest agent-kit
+scripts/sync-profile.sh pull    # the latest profile
+scripts/install.sh
+```
+
+### Moving the agent-kit folder
+
+The global rules keep working after a move, but the installed skills and subagents are links into the folder and stop working until you install again:
+
+```bash
+mv ~/agent-kit ~/Code/agent-kit
+~/Code/agent-kit/scripts/install.sh
+```
+
+Your profile and machine settings live in `~/.config/agent-kit/` and are not affected.
 
 ## Existing rules and skills: conflicts
 
