@@ -285,6 +285,9 @@ scripts/check-projects.sh ~/Code/my-app                    # 或者只检查指�
 ```bash
 scripts/enable-cloud.sh ~/Code/my-app                  # 添加钩子
 scripts/enable-cloud.sh ~/Code/my-app --with-profile   # 同时把你的个人设置复制到项目里
+
+# 新项目：一步完成模板和云端钩子：
+scripts/new-project.sh ~/Code/new-app "新应用" --cloud --with-profile
 ```
 
 然后提交项目的 `.claude/` 文件夹并推送。之后这个项目的每个云端会话启动时，都会克隆 agent-kit 并安装（大约 3 秒），再把全局规则、技能和子线程清单加进会话上下文。在你自己的电脑上，这个钩子什么都不做。

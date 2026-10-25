@@ -4,7 +4,10 @@
 # in your profile; pass --lang to choose another one.
 #
 # Usage:
-#   scripts/new-project.sh <project-folder> [project-name] [--lang en|zh-CN]
+#   scripts/new-project.sh <project-folder> [project-name] [--lang en|zh-CN] [--cloud] [--with-profile]
+#
+# --cloud           also set up Claude Code on the web (runs scripts/enable-cloud.sh)
+# --with-profile    with --cloud: copy your profile into the project too
 #
 # The project name defaults to the folder name. Afterwards, fill in the parts marked {{...}}.
 
@@ -18,12 +21,16 @@ load_messages "$UI_LANG"
 
 LANG_CHOICE="$CONTENT_LANG"
 ARGS=""
+CLOUD=0
+CLOUD_ARGS=""
 PROJECT_DIR=""
 PROJECT_NAME=""
 while [ $# -gt 0 ]; do
   case "$1" in
+    --cloud) CLOUD=1 ;;
+    --with-profile) CLOUD=1; CLOUD_ARGS="--with-profile" ;;
     --lang) shift; LANG_CHOICE="${1:-$CONTENT_LANG}" ;;
-    -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
     *)
       if [ -z "$PROJECT_DIR" ]; then PROJECT_DIR="$1"
       elif [ -z "$PROJECT_NAME" ]; then PROJECT_NAME="$1"
@@ -34,7 +41,7 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -z "$PROJECT_DIR" ]; then
-  sed -n '2,10p' "$0"
+  sed -n '2,13p' "$0"
   exit 2
 fi
 if [ ! -d "$PROJECT_DIR" ]; then
@@ -62,3 +69,9 @@ escaped_name="$(printf '%s' "$PROJECT_NAME" | sed 's/[\/&\\]/\\&/g')"
 done
 
 say template_done
+
+if [ "$CLOUD" -eq 1 ]; then
+  echo
+  # shellcheck disable=SC2086
+  "$KIT_DIR/scripts/enable-cloud.sh" "$PROJECT_DIR" $CLOUD_ARGS
+fi

@@ -285,6 +285,9 @@ A cloud session starts in a fresh container, so it has none of the rules and ski
 ```bash
 scripts/enable-cloud.sh ~/Code/my-app                  # add the hook
 scripts/enable-cloud.sh ~/Code/my-app --with-profile   # also copy your profile into the project
+
+# New project, template and cloud hook in one go:
+scripts/new-project.sh ~/Code/new-app "New App" --cloud --with-profile
 ```
 
 Then commit the project's `.claude/` folder and push. From then on, every cloud session of that project clones agent-kit, installs it (about 3 seconds), and adds the global rules and the list of skills and subagents to the session's context. On your own computer the hook does nothing.
