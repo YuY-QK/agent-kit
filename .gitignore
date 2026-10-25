@@ -1,10 +1,10 @@
-# 本机配置，不提交
+# Machine-specific files; never commit
 config.sh
 *.local.*
 
-# 系统文件
+# System files
 .DS_Store
 
-# Python 缓存
+# Python caches
 __pycache__/
 *.pyc

@@ -29,6 +29,13 @@ need_git() {
 is_repo() {
   [ -d "$PROFILE_DIR/.git" ]
 }
+need_identity() {
+  if [ -z "$(git -C "$PROFILE_DIR" config user.email 2>/dev/null || true)" ]; then
+    say git_identity_missing >&2
+    printf '  git config --global user.name "%s"\n  git config --global user.email "%s"\n' "Your Name" "you@example.com" >&2
+    exit 1
+  fi
+}
 
 case "$cmd" in
   status)
@@ -63,6 +70,7 @@ case "$cmd" in
     fi
     git -C "$PROFILE_DIR" add -A
     if [ -n "$(git -C "$PROFILE_DIR" status --porcelain)" ]; then
+      need_identity
       git -C "$PROFILE_DIR" commit -q -m "chore: agent-kit profile"
     fi
     branch="$(git -C "$PROFILE_DIR" rev-parse --abbrev-ref HEAD)"
@@ -94,7 +102,14 @@ case "$cmd" in
     fi
     mkdir -p "$(dirname "$PROFILE_DIR")"
     rm -rf "$PROFILE_DIR"
-    git clone -q "$url" "$PROFILE_DIR"
+    git clone -q "$url" "$PROFILE_DIR" 2>/dev/null || git clone -q "$url" "$PROFILE_DIR"
+    # if the remote's default branch is missing, check out the first branch it has
+    if ! git -C "$PROFILE_DIR" rev-parse -q --verify HEAD >/dev/null 2>&1; then
+      first="$(git -C "$PROFILE_DIR" branch -r 2>/dev/null | sed 's/^ *//' | grep -v -- '->' | head -1)"
+      if [ -n "$first" ]; then
+        git -C "$PROFILE_DIR" checkout -q -b "${first#origin/}" --track "$first"
+      fi
+    fi
     say profile_cloned "$(pretty "$PROFILE_DIR")"
     ;;
 
@@ -110,6 +125,7 @@ case "$cmd" in
     msg="${1:-chore: update agent-kit profile}"
     git -C "$PROFILE_DIR" add -A
     if [ -n "$(git -C "$PROFILE_DIR" status --porcelain)" ]; then
+      need_identity
       git -C "$PROFILE_DIR" commit -q -m "$msg"
     fi
     git -C "$PROFILE_DIR" push

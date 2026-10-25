@@ -53,6 +53,8 @@ check_project() {
   fi
 }
 
+case "${1:-}" in -h|--help) sed -n '2,15p' "$0"; exit 0 ;; esac
+
 if [ $# -gt 0 ]; then
   for d in "$@"; do
     if [ -d "$d" ]; then

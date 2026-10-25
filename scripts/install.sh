@@ -157,6 +157,11 @@ points_to_us() {
 is_kit_copy() {
   [ -d "$1" ] && [ ! -L "$1" ] && [ -f "$1/.agent-kit" ]
 }
+# A copied skill folder whose SKILL.md was edited by hand after we copied it.
+kit_copy_edited() {
+  mark="$(cat "$1/.agent-kit" 2>/dev/null || true)"
+  [ -n "$mark" ] && [ "$mark" != "$(hash_file "$1/SKILL.md")" ]
+}
 recorded_copy() {
   # a file we copied earlier and that nobody changed since
   [ -f "$1" ] && [ ! -L "$1" ] && [ -f "$INSTALLED_DB" ] || return 1
@@ -192,15 +197,31 @@ main_file() {
   if [ -d "$1" ]; then printf '%s' "$1/SKILL.md"; else printf '%s' "$1"; fi
 }
 
+# Does an installed copy already match what we would install now?
+same_content() {
+  if [ -d "$1" ]; then
+    [ -d "$2" ] && diff -rq -x .agent-kit "$1/" "$2/" >/dev/null 2>&1
+  else
+    [ -f "$2" ] && cmp -s "$1" "$2"
+  fi
+}
+# The link target a real (non dry-run) install would use for this source.
+real_src() {
+  case "$1" in
+    "$BUILD_DIR"/*) printf '%s' "$REAL_BUILD_DIR${1#"$BUILD_DIR"}" ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
+
 # new / uptodate / update / conflict
 classify() {
   src="$1"; dest="$2"
   if points_to_us "$dest"; then
-    if [ "$MODE" = "link" ] && [ "$(readlink "$dest")" = "$src" ]; then echo uptodate; else echo update; fi
-  elif is_kit_copy "$dest"; then
-    echo update
-  elif recorded_copy "$dest"; then
-    echo update
+    if [ "$MODE" = "link" ] && [ "$(readlink "$dest")" = "$(real_src "$src")" ]; then echo uptodate; else echo update; fi
+  elif is_kit_copy "$dest" && kit_copy_edited "$dest"; then
+    echo conflict
+  elif is_kit_copy "$dest" || recorded_copy "$dest"; then
+    if [ "$MODE" = "copy" ] && same_content "$src" "$dest"; then echo uptodate; else echo update; fi
   elif [ -f "$dest" ] && [ ! -L "$dest" ] && [ -f "$src" ] && cmp -s "$src" "$dest"; then
     if [ "$MODE" = "copy" ]; then echo uptodate; else echo update; fi
   elif [ -f "$dest" ] && [ ! -L "$dest" ] && [ ! -s "$dest" ]; then
@@ -362,7 +383,11 @@ place() {
       return
     fi
     run rm "$dest"
-  elif is_kit_copy "$dest"; then
+  elif is_kit_copy "$dest" && ! kit_copy_edited "$dest"; then
+    if [ "$MODE" = "copy" ] && same_content "$src" "$dest"; then
+      say up_to_date "$(pretty "$dest")"
+      return
+    fi
     run rm -rf "$dest"
   elif recorded_copy "$dest" || { [ -f "$dest" ] && [ ! -L "$dest" ] && [ -f "$src" ] && cmp -s "$src" "$dest"; }; then
     if [ "$MODE" = "copy" ] && [ -f "$src" ] && cmp -s "$src" "$dest"; then
@@ -380,7 +405,11 @@ place() {
     forget_copy "$dest"
   else
     run cp -RL "$src" "$dest"
-    if [ -d "$src" ]; then run touch "$dest/.agent-kit"; else record_copy "$dest"; fi
+    if [ -d "$src" ]; then
+      [ "$DRY_RUN" -eq 1 ] || hash_file "$dest/SKILL.md" > "$dest/.agent-kit"
+    else
+      record_copy "$dest"
+    fi
   fi
   say installed "$(pretty "$dest")"
 }
@@ -433,9 +462,13 @@ apply_override_decisions() {
       merge)
         say override_merged "$name"
         ;;
-      *)
+      keep)
         [ "$DRY_RUN" -eq 1 ] || printf '%s\n' "$base" > "$dest.base"
         say override_kept "$name"
+        ;;
+      *)
+        # not reviewed (non-interactive or --yes): keep the override and ask again next time
+        say override_unreviewed "$name"
         ;;
     esac
   done < "$PLAN"

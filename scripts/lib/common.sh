@@ -253,7 +253,7 @@ EOF
 hash_file() {
   if [ ! -f "$1" ]; then echo "-"; return; fi
   if command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 "$1" | awk '{print $1}'
+    LC_ALL=C shasum -a 256 "$1" | awk '{print $1}'
   elif command -v sha256sum >/dev/null 2>&1; then
     sha256sum "$1" | awk '{print $1}'
   else
