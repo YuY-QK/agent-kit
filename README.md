@@ -20,6 +20,7 @@ One set of rules and skills for AI coding assistants, shared across all your com
 - [Updating](#updating)
 - [Existing rules and skills: conflicts](#existing-rules-and-skills-conflicts)
 - [Projects](#projects)
+- [Cloud sessions (Claude Code on the web)](#cloud-sessions-claude-code-on-the-web)
 - [What's included](#whats-included)
 - [Commands](#commands)
 - [Files and locations](#files-and-locations)
@@ -270,6 +271,33 @@ scripts/check-projects.sh ~/Code/my-app                    # or specific project
 
 `new-project.sh` never overwrites existing files. Fill in the parts marked `{{...}}` afterwards. `check-projects.sh` only reports; it warns about a missing `AGENTS.md` or `CLAUDE.md`, and about project skills with the same name as a shared skill (both would load).
 
+## Cloud sessions (Claude Code on the web)
+
+A cloud session starts in a fresh container, so it has none of the rules and skills installed on your computers. To use them there, add agent-kit's start-up hook to the project:
+
+```bash
+scripts/enable-cloud.sh ~/Code/my-app                  # add the hook
+scripts/enable-cloud.sh ~/Code/my-app --with-profile   # also copy your profile into the project
+```
+
+Then commit the project's `.claude/` folder and push. From then on, every cloud session of that project clones agent-kit, installs it (about 3 seconds), and adds the global rules and the list of skills and subagents to the session's context. On your own computer the hook does nothing.
+
+What it adds to the project:
+
+| File | Purpose |
+|---|---|
+| `.claude/hooks/agent-kit-session-start.sh` | The hook. It runs only when `CLAUDE_CODE_REMOTE=true`, and never fails the session; problems are reported in the session and in `~/.config/agent-kit/cloud-setup.log` |
+| `.claude/settings.json` | A `SessionStart` entry, merged into your existing settings |
+| `.claude/agent-kit/` | With `--with-profile`: a copy of your `profile.sh` and `rules/*.md` |
+
+Which settings a cloud session uses, in order:
+
+1. `AGENT_KIT_PROFILE_REPO`, if you set it in the cloud environment's variables and the session can clone it. A private profile repository usually can't be cloned from a cloud session.
+2. The project's `.claude/agent-kit/`, from `--with-profile`. It is committed with the project, so if the project is public, so are these settings. Run the command again after changing your settings to refresh the copy.
+3. agent-kit's defaults (replies in English).
+
+Requirements: the agent-kit repository must be public, because cloud sessions clone it without credentials (or set `AGENT_KIT_REPO` in the environment to a URL they can reach), and the environment's network access must allow GitHub (the default does).
+
 ## What's included
 
 Shared skills:
@@ -313,6 +341,7 @@ Every skill has an English `SKILL.md` and a Chinese `SKILL.zh-CN.md`; the instal
 | `scripts/sync-profile.sh` | `status`, `init URL`, `clone URL`, `pull`, `push [message]` |
 | `scripts/new-project.sh` | Add the project template to a project |
 | `scripts/check-projects.sh` | Check projects against the project-layer conventions |
+| `scripts/enable-cloud.sh` | Add the start-up hook that installs agent-kit in a project's cloud sessions; `--with-profile` also copies your settings |
 | `scripts/build.sh` | Build into `~/.config/agent-kit/build/`; `--rules` prints the generated global rules |
 
 Run any script with `--help` for details.

@@ -20,6 +20,7 @@
 - [更新](#更新)
 - [已有的规则和技能：冲突处理](#已有的规则和技能冲突处理)
 - [项目](#项目)
+- [云端会话（网页版 Claude Code）](#云端会话网页版-claude-code)
 - [包含的技能](#包含的技能)
 - [命令](#命令)
 - [文件和位置](#文件和位置)
@@ -270,6 +271,33 @@ scripts/check-projects.sh ~/Code/my-app                    # 或者只检查指�
 
 `new-project.sh` 不会覆盖已有文件，之后把标着 `{{...}}` 的部分填好。`check-projects.sh` 只报告、不修改：缺少 `AGENTS.md` 或 `CLAUDE.md` 会提示，项目里有和通用技能同名的技能也会提示（两个都会被加载）。
 
+## 云端会话（网页版 Claude Code）
+
+云端会话每次都从一个全新的容器开始，里面没有你电脑上安装的规则和技能。要在云端也用上它们，给项目加上 agent-kit 的启动钩子：
+
+```bash
+scripts/enable-cloud.sh ~/Code/my-app                  # 添加钩子
+scripts/enable-cloud.sh ~/Code/my-app --with-profile   # 同时把你的个人设置复制到项目里
+```
+
+然后提交项目的 `.claude/` 文件夹并推送。之后这个项目的每个云端会话启动时，都会克隆 agent-kit 并安装（大约 3 秒），再把全局规则、技能和子线程清单加进会话上下文。在你自己的电脑上，这个钩子什么都不做。
+
+它会给项目添加：
+
+| 文件 | 作用 |
+|---|---|
+| `.claude/hooks/agent-kit-session-start.sh` | 钩子本身。只在 `CLAUDE_CODE_REMOTE=true` 时运行，从不让会话失败；出问题会在会话里说明，并记录在 `~/.config/agent-kit/cloud-setup.log` |
+| `.claude/settings.json` | 一条 `SessionStart` 设置，合并进已有设置 |
+| `.claude/agent-kit/` | 加 `--with-profile` 时：`profile.sh` 和 `rules/*.md` 的副本 |
+
+云端会话使用哪份设置，按顺序：
+
+1. `AGENT_KIT_PROFILE_REPO`：你在云端环境变量里设置了它、并且会话能克隆到时使用。私有的个人设置仓库，通常在云端会话里克隆不了。
+2. 项目里的 `.claude/agent-kit/`，来自 `--with-profile`。它随项目一起提交，项目公开的话，这份设置也会公开。改了设置后再运行一次命令，就会更新这份副本。
+3. agent-kit 的默认设置（用英文回复）。
+
+前提：agent-kit 仓库必须公开，因为云端会话不带凭据克隆它（或者在环境变量里把 `AGENT_KIT_REPO` 设成它能访问的地址）；环境的网络设置要允许访问 GitHub（默认允许）。
+
 ## 包含的技能
 
 通用技能：
@@ -313,6 +341,7 @@ scripts/check-projects.sh ~/Code/my-app                    # 或者只检查指�
 | `scripts/sync-profile.sh` | `status`、`init 地址`、`clone 地址`、`pull`、`push [说明]` |
 | `scripts/new-project.sh` | 给项目添加项目模板 |
 | `scripts/check-projects.sh` | 按项目层约定检查项目 |
+| `scripts/enable-cloud.sh` | 给项目添加启动钩子，让云端会话自动安装 agent-kit；`--with-profile` 同时复制你的设置 |
 | `scripts/build.sh` | 生成到 `~/.config/agent-kit/build/`；`--rules` 输出生成的全局规则 |
 
 任意脚本加 `--help` 查看详细说明。
