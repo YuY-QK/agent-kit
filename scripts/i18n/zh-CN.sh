@@ -150,6 +150,7 @@ M_chk_none_found='%s 下没有找到项目（含 .git、AGENTS.md 或 CLAUDE.md 
 # ===== 网页（W_ 开头）=====
 W_term_url='网页地址：'
 W_term_hint='如果浏览器没有自动打开，请复制上面的地址到浏览器。按 Ctrl+C 取消。'
+W_term_hint_manual='这里没能打开浏览器。请把上面的地址复制到浏览器（多数终端里按住 ⌘ 或 Ctrl 点击就能打开）。按 Ctrl+C 取消。'
 W_term_timeout='超时或已取消。'
 W_theme='切换深浅色'
 W_cancel='取消'

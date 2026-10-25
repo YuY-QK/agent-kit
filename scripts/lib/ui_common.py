@@ -9,6 +9,7 @@ import json
 import os
 import re
 import secrets
+import subprocess
 import sys
 import threading
 import time
@@ -255,18 +256,42 @@ def _handler(app):
     return Handler
 
 
+def open_browser(url):
+    """Open the page in the default browser. The platform command is tried first:
+    webbrowser alone stays silent when BROWSER is set to something that doesn't work."""
+    if sys.platform == "darwin":
+        commands = [["/usr/bin/open", url]]
+    elif os.name == "nt":
+        commands = [["cmd", "/c", "start", "", url]]
+    else:
+        commands = [["xdg-open", url], ["gio", "open", url]]
+    for cmd in commands:
+        try:
+            p = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if p.wait(timeout=5) == 0:
+                return True
+        except Exception:
+            continue
+    try:
+        return webbrowser.open(url)
+    except Exception:
+        return False
+
+
 def serve(app, messages, no_open=False, port=0):
     server = ThreadingHTTPServer(("127.0.0.1", port), _handler(app))
     url = "http://127.0.0.1:%d/?t=%s" % (server.server_address[1], app.token)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     print(messages.get("term_url", "Page address:") + " " + url)
-    print(messages.get("term_hint", "If the browser did not open, paste the address above into it. Press Ctrl+C to cancel."))
     sys.stdout.flush()
+    opened = False
     if not no_open and os.environ.get("AGENT_KIT_NO_BROWSER") != "1":
-        try:
-            webbrowser.open(url)
-        except Exception:
-            pass
+        opened = open_browser(url)
+    if opened:
+        print(messages.get("term_hint", "If the browser did not open, paste the address above into it. Press Ctrl+C to cancel."))
+    else:
+        print(messages.get("term_hint_manual", "Could not open a browser. Copy the address above into one. Press Ctrl+C to cancel."))
+    sys.stdout.flush()
     try:
         finished = app.done.wait(TIMEOUT_SECONDS)
     except KeyboardInterrupt:

@@ -151,6 +151,7 @@ M_chk_none_found='No projects found in %s (subfolders with .git, AGENTS.md or CL
 # ===== web pages (W_ keys) =====
 W_term_url='Page address:'
 W_term_hint='If the browser did not open, paste the address above into it. Press Ctrl+C to cancel.'
+W_term_hint_manual='Could not open a browser here. Copy the address above into your browser (in most terminals ⌘-click or Ctrl-click opens it). Press Ctrl+C to cancel.'
 W_term_timeout='Timed out or cancelled.'
 W_theme='Light / dark'
 W_cancel='Cancel'
