@@ -8,7 +8,7 @@ This file is the project-level entry point. It only defines this project's docum
 
 ## Document routing
 
-Always read `docs/progress.md` first: current status, plan and open items. Then read only the material the task needs:
+If `docs/HANDOFF.md` exists, read it first: it says where the last session stopped (delete it once its content is in `docs/progress.md`). Always read `docs/progress.md` first: current status, plan and open items. Then read only the material the task needs:
 
 - Product scope, business rules, user flows and acceptance criteria: `docs/PRD_v1.0.md` and later decision records
 - Screens and interaction prototype: `docs/PROTOTYPE_v1.0.md`

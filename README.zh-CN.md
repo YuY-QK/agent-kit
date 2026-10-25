@@ -303,7 +303,7 @@ scripts/check-projects.sh                                  # 检查 PROJECT_DIRS
 scripts/check-projects.sh ~/Code/my-app                    # 或者只检查指定项目
 ```
 
-`docs/progress.md` 是项目唯一的进度摘要（现状、计划、待办）；全局规则要求助手先读它、并随时保持更新，这样新会话不用回看旧对话也能接着做。
+`docs/progress.md` 是项目唯一的进度摘要（现状、计划、待办）；全局规则要求助手先读它、并随时保持更新，这样新会话不用回看旧对话也能接着做。在用量额度或上下文用完之前（以及长任务每完成一个阶段时），助手还会写一份临时的 `docs/HANDOFF.md`，写明停在哪里、接下来做什么；下一个会话最先读它，把需要保留的内容合并进 `docs/progress.md`，然后删掉它。云端会话的容器不会保留，所以这份文档会提交并推送。
 
 `new-project.sh` 不会覆盖已有文件，之后把标着 `{{...}}` 的部分填好。`check-projects.sh` 只报告、不修改：缺少 `AGENTS.md` 或 `CLAUDE.md` 会提示，项目里有和通用技能同名的技能也会提示（两个都会被加载）。
 

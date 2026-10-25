@@ -303,7 +303,7 @@ scripts/check-projects.sh                                  # checks every projec
 scripts/check-projects.sh ~/Code/my-app                    # or specific projects
 ```
 
-`docs/progress.md` is the project's single progress summary (status, plan, open items); the global rules tell the assistant to read it first and keep it current, so a new session can continue without the old conversation.
+`docs/progress.md` is the project's single progress summary (status, plan, open items); the global rules tell the assistant to read it first and keep it current, so a new session can continue without the old conversation. Before the usage limit or context runs out (and at the end of each stage of a long task), the assistant also writes a temporary `docs/HANDOFF.md` saying exactly where it stopped and what comes next; the next session reads it first, moves what should last into `docs/progress.md`, and deletes it. In cloud sessions the note is committed and pushed, since the container doesn't survive.
 
 `new-project.sh` never overwrites existing files. Fill in the parts marked `{{...}}` afterwards. `check-projects.sh` only reports; it warns about a missing `AGENTS.md` or `CLAUDE.md`, and about project skills with the same name as a shared skill (both would load).
 
