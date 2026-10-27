@@ -339,6 +339,8 @@ Requirements: the agent-kit repository must be public, because cloud sessions cl
 
 ## What's included
 
+Global rules (in `rules/<language>/`, assembled by `rules/manifest`): reply and document languages, information priority, reading and workflow, the progress summary, handoff before usage runs out, a recommended model with every solution or plan (by difficulty, for Claude and Codex), documents, engineering, verification, subagents and git. `scripts/build.sh --rules` prints the result.
+
 Shared skills:
 
 | Skill | Use it to |

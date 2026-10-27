@@ -339,6 +339,8 @@ scripts/new-project.sh ~/Code/new-app "新应用" --cloud --with-profile
 
 ## 包含的技能
 
+全局规则（在 `rules/<语言>/` 里，按 `rules/manifest` 组合）：回复和文档语言、信息优先级、阅读与工作流程、进度摘要、额度用完前的交接、给出方案或计划时按难度推荐模型（Claude 和 Codex）、文档、工程、验证、子代理和 git。`scripts/build.sh --rules` 可以查看组合结果。
+
 通用技能：
 
 | 技能 | 用途 |
